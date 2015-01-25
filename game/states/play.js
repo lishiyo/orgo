@@ -15,9 +15,6 @@ Play.prototype = {
 		/* --- Add all sprites/groups --- */
 
 		// Create the enemy group
-// 		this.enemies = this.game.add.group();
-// 		this.enemies.enableBody = true;	
-// 		this.enemies.createMultiple(20, 'enemy');
 		this.enemies = new EnemyGroup({ key: 'enemy' }, this.game);
 		this.game.add.existing(this.enemies);
 		
@@ -31,11 +28,6 @@ Play.prototype = {
 			arrowKeys: this.arrowKeys
 		}, this.game, this.game.world.centerX, 450);
 		this.game.add.existing(this.player);
-		
-		// Create the bonus group
-// 		this.bonuses = this.game.add.group();
-// 		this.bonuses.enableBody = true;	
-// 		this.bonuses.createMultiple(2, 'bonus');
 		
 		// Create default powerups
 		this.powerups = this.game.add.group();
@@ -74,16 +66,17 @@ Play.prototype = {
 		this.game.paused = false;
 		
 		// starting variables
-		this.lives = 10;
+		this.lives = this.game.global.lives;
 		this.game.global.score = 0;
-		this.nextLaserTime = 0;
-		this.nextEnemyTime = 0;
+		this._nextLaserTime = 0;
+		this._nextEnemyTime = 0;
 		this._oldEnemyLevel = 1;
 		this._currEnemyLevel = 1;
+		this._colors = ["B", "G", "R"];
 	
 // 		this.bonus = 1;
 		this._oldPowerLevel = 1;
-		this.currPowerLevel = 1;
+		this._currPowerLevel = 1;
 		
 		// Add sounds
 		this.bonusSound = this.game.add.audio('takeBonus');
@@ -114,20 +107,22 @@ Play.prototype = {
 		this.player.move();
 
 		// Fire a laser when the spacebar is pressed
-		if (this.arrowKeys.fire.isDown && this.game.time.now > this.nextLaserTime) {
+		if (this.arrowKeys.fire.isDown && this.game.time.now > this._nextLaserTime) {
 			// Reset the timer
-			this.nextLaserTime = this.game.time.now + 200; 
-			this.player.fireWeapon(this.currPowerLevel, this.lasers);
+			this._nextLaserTime = this.game.time.now + 200; 
+			this.player.fireWeapon(this._currPowerLevel, this.lasers);
 		}
 
 		this.createEnemies();
 	},
+	
+	/* --- RECYCLE ENEMIES --- */
 
 	createEnemies: function(){
 		// Add a new enemy, freq increasing with the score
-		// At the beginning: one enemy per 1000ms
+		// At start: one enemy per 1000ms
 		// After 400 points: one enemy every 500ms
-		if (this.nextEnemyTime < this.game.time.now) {
+		if (this._nextEnemyTime < this.game.time.now) {
 			var start = 1000, 
 					end = 500, 
 					score = 400;
@@ -151,11 +146,11 @@ Play.prototype = {
 			
 			// instantiate a new enemy
 			this.generateEnemy(enemyLevel);
-			this.nextEnemyTime = this.game.time.now + delay;
+			this._nextEnemyTime = this.game.time.now + delay;
 		}
 	},
 	
-	// RECYCLE enemy
+	
 	generateEnemy: function(enemyLevel) {
 // 		var enemy = this.enemies.getFirstDead();
 		var enemy = this.enemies.getRandom();
@@ -163,6 +158,8 @@ Play.prototype = {
 
 		this.enemies.resetEnemy(enemy);
 	},
+	
+	/* --- RECYCLE POWERUPS --- */
 	
 	// initialize this.powerups with 3 random powerups
 	createPowerUps: function(level) {
@@ -190,8 +187,8 @@ Play.prototype = {
 	
 	// generate next random powerup based on current power level
 	newPowerUp: function() {	
-		if (this._oldPowerLevel !== this.currPowerLevel) {		
-			this.createPowerUps(this.currPowerLevel);		
+		if (this._oldPowerLevel !== this._currPowerLevel) {		
+			this.createPowerUps(this._currPowerLevel);		
 		}
 
 		var powerup = this.powerups.getFirstDead();				
@@ -202,27 +199,30 @@ Play.prototype = {
 		powerup.reset(this.game.rnd.integerInRange(20, this.game.world.width-40), -powerup.height/2);
 		powerup.body.velocity.y = 150;
 		powerup.body.angularVelocity = 100;
+		
 		powerup.checkWorldBounds = true;	
 		powerup.outOfBoundsKill = true;	
 	},
 	
+	/* --- UTILS --- */
+	
 	getPowerColor: function(key){
-		var matchedColor = ["B", "G", "R"].filter(function(color){
-			return key.search(color) !== -1;
-		});
-		
-		return matchedColor[0];
+		for (var i = 0; i < this._colors.length; i++) {
+			if (key.search(this._colors[i]) !== -1) {
+				return this._colors[i];
+			}
+		}	
 	},
 	
 	checkPowerLevel: function(key){
-		var level = ["1", "2", "3"].filter(function(num){
-			return key.search(num) !== -1;
-		});
-		
-		return level[0];
+		var levels = ["1", "2", "3"];
+		for (var i = 0; i < levels.length; i++) {
+			if (key.search(levels[i]) !== -1) {
+				return levels[i];
+			}
+		}	
 	},
 	
-
 	// Player was hit
 	playerHit: function(player, enemy) {
 		// remove the enemy with sound
@@ -234,8 +234,8 @@ Play.prototype = {
 		this.hitSound.play();
 
 		// Decrease power level by one, down to min of 1
-		this._oldPowerLevel = this.currPowerLevel;
-		this.currPowerLevel = Math.max(this.currPowerLevel-1, 1);
+		this._oldPowerLevel = this._currPowerLevel;
+		this._currPowerLevel = Math.max(this._currPowerLevel-1, 1);
 
 		// Make the screen flash
 		this.game.stage.backgroundColor = '#fff';
@@ -277,22 +277,22 @@ Play.prototype = {
 		var newColor = this.getPowerColor(powerup.key);
 		this._currColor = (this._currColor || newColor);
 		
-		// if powerup is same color of >= level, go up one power level
+		// if powerup is same color and >= level, go up one power level
 		// if different color, reset power level to one
 		if (this._currColor !== newColor) {
-			this.swapPowerLevel(-(this.currPowerLevel-1));
+			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
 		} else {		
 			this.colorLabel.text = 'color: ' + this._currColor;
 			
 			var newLevel = this.checkPowerLevel(powerup.key);
-			if (newLevel >= this.currPowerLevel)	{
+			if (newLevel >= this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
 		}
 		
 		powerup.kill();
-		this.increaseScore(this.currPowerLevel * 10);
+		this.increaseScore(this._currPowerLevel * 10);
 		
 		// Tween the player with sound
 		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
@@ -306,7 +306,7 @@ Play.prototype = {
 		enemy.y -= 10;
 
 		// Reduce health based on power level
-		enemy.health -= (this.currPowerLevel * 20);	
+		enemy.health -= (this._currPowerLevel * 20);	
 		
 		// if no more health, kill the enemy
 		if (enemy.health <= 0) {
@@ -324,6 +324,9 @@ Play.prototype = {
 		}
 	},
 
+	
+	/*-- UI --- */
+	
 	increaseScore: function(x) {
 		// Inscrease the score by 'x' and update the label
 		this.game.global.score += x;
@@ -341,23 +344,23 @@ Play.prototype = {
 	swapLaser: function(color) {
 		this.lasers.removeAll();
 		
-		var laserKey = "laser" + this._currColor + this.currPowerLevel;
+		var laserKey = "laser" + this._currColor + this._currPowerLevel;
 		this.lasers.createMultiple(50, laserKey);
 	},
 	
 	swapPowerLevel: function(dx) {
-		this._oldPowerLevel = this.currPowerLevel;
-		this.currPowerLevel += dx;
+		this._oldPowerLevel = this._currPowerLevel;
+		this._currPowerLevel += dx;
 		this.swapLaser();
 		
-		this.powerLabel.text = 'power: ' + this.currPowerLevel;
+		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
 	pauseGame: function(){
     var w = this.game.width,
 				h = this.game.height;
 		
-    var pause_label = this.game.add.text(w/2, 20, 'Pause', { font: '24px Arial', fill: '#fff' });
+    var pause_label = this.game.add.text(w-40, 20, 'Pause', { font: '24px Arial', fill: '#fff' });
     pause_label.inputEnabled = true;
 		
     pause_label.events.onInputUp.add(function () {
@@ -410,24 +413,26 @@ Play.prototype = {
 	},
 
 	displayLabels: function(){
+		var w = this.game.world.width,
+				h = this.game.world.height;
 		
 		// Display lives and health label in the top left
-		this.livesLabel = this.game.add.text(20, 20, 'lives: 10', 
+		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
 			{ font: '16px Arial', fill: '#ffffff' });
 		this.healthLabel = this.game.add.text(20, 40, 'health: 100',  {font: '14px Arial', fill: '#ffffff' });
 
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(this.game.world.width-20, 20, 'score: 0', { font: '16px Arial', fill: '#ffffff' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '16px Arial', fill: '#ffffff' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
-		this.colorLabel = this.game.add.text(this.game.world.width-20, 40, 'color: ', { font: '14px Arial', fill: '#ffffff' });
+		this.colorLabel = this.game.add.text(w-20, 40, 'color: ', { font: '14px Arial', fill: '#ffffff' });
 		this.colorLabel.anchor.setTo(1, 0);
-		this.powerLabel = this.game.add.text(this.game.world.width-20, 60, 'power: ', { font: '14px Arial', fill: '#ffffff' });
+		this.powerLabel = this.game.add.text(w-20, 60, 'power: ', { font: '14px Arial', fill: '#ffffff' });
 		this.powerLabel.anchor.setTo(1, 0);
 		
 
-		// Capture and set up keys
+		// Capture and setup keys
 		this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.UP, Phaser.Keyboard.DOWN, Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR]);
 
 		this.arrowKeys = {

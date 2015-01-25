@@ -5,12 +5,10 @@ var EnemyGroup = function(opts, game, parent) {
 	
 	this.enableBody = true;	
 	this._currLevel = 1;
-	this._bossGenerated = {};
+	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
 	
-	
 	this.addEnemies(1);
-	window.eg = this;
 };
 
 
@@ -23,11 +21,12 @@ EnemyGroup.prototype.update = function() {
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
 	var level = this.getEnemyLevel(enemy.key);
-	return 20 * level;
+	
+	return this.game.global.enemyAttack[level];
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
-	if (this._bossGenerated[level]) { return; }
+	if (this._bossTally[level]) { return; }
 	// remain 1 for now
 	var bossKey = 'boss' + 1;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
@@ -44,12 +43,12 @@ EnemyGroup.prototype.genBoss = function(level) {
 	boss.body.velocity.y = this.game.rnd.integerInRange(startVelY, endVelY);
 	boss.body.velocity.x = this.game.rnd.integerInRange(startVelX, endVelX);
 
-	boss.health = level * 200;
+	boss.health = level * 500;
 	boss.body.collideWorldBounds = true;
 	boss.body.bounce.set(0.75);
 	
 	// only create one boss per level
-	this._bossGenerated[level] = true;
+	this._bossTally[level] = true;
 	
 	return boss;
 };

@@ -11,7 +11,7 @@ var Player = function(opts, game, x, y, frame) {
 	this.alive = true;
 	this.health = this.game.global.health; // starting HP
 
-	this.arrowKeys = opts.arrowKeys;	
+	this.arrowKeys = opts.arrowKeys;
 	
 	this.fireSound = this.game.add.audio('fireSound');
 };
@@ -24,20 +24,61 @@ Player.prototype.update = function() {
   
 };
 
+// rotate if you hold down two keys at own
 Player.prototype.move = function(){
-	if (this.arrowKeys.left.isDown) {
-		this.body.velocity.x = -350;
-	} else if (this.arrowKeys.right.isDown) {
-		this.body.velocity.x = 350;
-	} else if (this.arrowKeys.up.isDown) {
+	var up = this.arrowKeys.up,
+			down = this.arrowKeys.down,
+			left = this.arrowKeys.left,
+			right = this.arrowKeys.right;
+	var keys = [up, down, left, right];
+	
+	var checkLateral = function(dir){
+		if (left.isDown) {
+			this.game.add.tween(this).to( { angle: this.angle + (dir*5) }, 500, Phaser.Easing.Linear.None, true);			
+		} else if (right.isDown) {
+			this.game.add.tween(this).to( { angle: this.angle - (dir*5) }, 500, Phaser.Easing.Linear.None, true);
+		}
+	};
+	
+	var checkVertical = function(dir){
+		if (up.isDown) {
+			this.game.add.tween(this).to( { angle: this.angle + (dir*5) }, 500, Phaser.Easing.Linear.None, true);	
+		} else if (down.isDown) {
+			this.game.add.tween(this).to( { angle: this.angle - (dir*5) }, 500, Phaser.Easing.Linear.None, true);	
+		}
+	}
+		
+	if (up.isDown) {
 		this.body.velocity.y = -350;
-	} else if (this.arrowKeys.down.isDown) {
+		checkLateral(-1);
+	} else if (down.isDown) {
 		this.body.velocity.y = 350;
+		checkLateral(1);
+	} else if (left.isDown) {
+		this.body.velocity.x = -350;
+		checkVertical(1);
+	} else if (right.isDown) {
+		this.body.velocity.x = 350;
+		checkVertical(-1);
 	} else {
-		// Stop the player
 		this.body.velocity.x = 0;
 		this.body.velocity.y = 0;
 	}
+	
+	
+// 	if (this.arrowKeys.left.isDown) {
+// 		this.body.velocity.x = -350;
+// 	} else if (this.arrowKeys.right.isDown) {
+// 		this.body.velocity.x = 350;
+// 	} else if (this.arrowKeys.up.isDown) {
+// 		this.body.velocity.y = -350;
+// 	} else if (this.arrowKeys.down.isDown) {
+// 		this.body.velocity.y = 350;
+// 	} else {
+// 		// Stop the player
+// 		this.body.velocity.x = 0;
+// 		this.body.velocity.y = 0;
+// 	}
 };
 
 // fire based on weapons level 1-3 and type
