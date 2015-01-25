@@ -14,7 +14,7 @@ Boot.prototype = {
 			health: 100,
 			enemyHealth: { 1: 100, 2: 150, 3: 250},
 			enemyAttack: { 1: 20, 2: 50, 3: 100},
-			bg: "#333"
+			bg: "#33b5e5"
 		};
 		
 	},

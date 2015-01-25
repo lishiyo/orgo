@@ -161,36 +161,58 @@ Player.prototype.move = function(){
 			right = this.arrowKeys.right;
 	var keys = [up, down, left, right];
 	
-	var checkLateral = function(){
-		if (left.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle - 5 }, 500, Phaser.Easing.Linear.None, true);			
-// 			this.body.velocity.x = -350;
-		} else if (right.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle + 5 }, 500, Phaser.Easing.Linear.None, true);
-// 			this.body.velocity.x = 350;
-		}
-	};
+	var tweenAngle = function(newAngle) {
+		this.body.velocity.y = 0;
+		this.body.velocity.x = 0;
+		this.game.add.tween(this).to( { angle: newAngle }, 100, Phaser.Easing.Linear.None, true);	
+	}.bind(this);
 	
-	var checkVertical = function(){
-		if (up.isDown) {
-			this.body.velocity.y = -350;
-		} else if (down.isDown) {
-			this.body.velocity.y = 350;
+	var checkLateral = function(dir){
+		
+		if (left.isDown) {
+			tweenAngle(this.angle + (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);			
+		} else if (right.isDown) {
+			tweenAngle(this.angle - (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);
+		} else {
+			this.body.velocity.y = dir * 350;
 		}
-	}
+	}.bind(this);
+	
+	
+	var checkVertical = function(dir){
+// 		this.body.velocity.y = 0;
+// 		this.body.velocity.x = 0;
+		if (up.isDown) {
+			tweenAngle(this.angle + (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+		} else if (down.isDown) {
+			tweenAngle(this.angle - (dir * 45));
+			
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+		} else {
+			this.body.velocity.x = -(dir * 350);
+		}
+	}.bind(this);
 		
 	if (up.isDown) {
-		this.body.velocity.y = -350;
 		checkLateral(-1);
 	} else if (down.isDown) {
-		this.body.velocity.y = 350;
-		checkLateral();
+		checkLateral(1);
 	} else if (left.isDown) {
-		this.body.velocity.x = -350;
+		checkVertical(1);
 	} else if (right.isDown) {
-		this.body.velocity.x = 350;
+		checkVertical(-1);
 	} else {
-		// Stop the player
 		this.body.velocity.x = 0;
 		this.body.velocity.y = 0;
 	}
@@ -257,22 +279,30 @@ Player.prototype.fireLevelThree = function(color) {
 
 	// RECYCLE lasers
 Player.prototype.fireLaser = function(x, color) {
-		var laser = this.lasers.getFirstDead();
-		if (!laser) { // first laser
-			return;
-		}
-	
-		// Set the collision area of the laser
-		laser.body.setSize(laser.width, 5, 0, 0);
+	var laser = this.lasers.getFirstDead();
+	if (!laser) { // first laser
+		return;
+	}
 
-		// Initialize the laser
-		laser.anchor.setTo(0.5, 1);
-		laser.reset(x, this.y - this.height/2);
-		laser.body.velocity.y = -400;
+	// Set the collision area of the laser
+	laser.body.setSize(laser.width, 5, 0, 0);
 
-		// Kill the laser when out of the world
-		laser.checkWorldBounds = true;	
-		laser.outOfBoundsKill = true;
+	// Initialize the laser
+	laser.anchor.setTo(0.5, 1);
+	laser.reset(x, this.y - this.height/2);
+
+	// Laser follows angle and velocity of player
+	laser.angle = this.angle;
+	var rad = Phaser.Math.degToRad(this.angle);
+	var dx = 300 * Math.sin(rad),
+			dy = -300 * Math.cos(rad);
+		
+	laser.body.velocity.x = dx;
+	laser.body.velocity.y = dy;
+			
+	// Kill the laser when out of the world
+	laser.checkWorldBounds = true;	
+	laser.outOfBoundsKill = true;
 };
 
 
@@ -398,7 +428,7 @@ Boot.prototype = {
 			health: 100,
 			enemyHealth: { 1: 100, 2: 150, 3: 250},
 			enemyAttack: { 1: 20, 2: 50, 3: 100},
-			bg: "#333"
+			bg: "#33b5e5"
 		};
 		
 	},
@@ -454,7 +484,7 @@ Menu.prototype = {
   },
   create: function() { 
 		// tween
-		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the microbes', { font: '50px Arial', fill: '#ffffff' });
+		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the microbes', { font: '50px Lato', fill: '#fff' });
 		nameLabel.anchor.setTo(0.5, 0.5);
 		nameLabel.scale.setTo(0, 0);
 		this.game.add
@@ -468,7 +498,7 @@ Menu.prototype = {
 // 		}
 
 		// instructions
-		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press the spacebar to start and fire. Arrow keys are [P L ; ']", { font: '25px Arial', fill: '#ffffff' });
+		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press the spacebar to start and fire! Use arrow keys for movement and rotation.", { font: '25px Lato', fill: '#f9f9f9' });
 		startLabel.anchor.setTo(0.5, 0.5);	
 		this.game.add
 			.tween(startLabel).to({alpha: 0}, 500)
@@ -864,10 +894,10 @@ Play.prototype = {
 	},
 	
 	pauseGame: function(){
-    var w = this.game.width,
-				h = this.game.height;
+    var w = this.game.world.width,
+				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-40, 20, 'Pause', { font: '24px Arial', fill: '#fff' });
+    var pause_label = this.game.add.text(w-80, h-40, 'PAUSE', { font: '20px Lato', fill: '#ff0080' });
     pause_label.inputEnabled = true;
 		
     pause_label.events.onInputUp.add(function () {
@@ -876,7 +906,7 @@ Play.prototype = {
       this.pauseMenu.anchor.setTo(0.5, 0.5);
 			
       // label to illustrate which menu item was chosen. 
-      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Arial', fill: '#fff' });
+      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
       this.choiceLabel.anchor.setTo(0.5, 0.5);
 			
 			this.game.input.onDown.add(this.unpause, this);
@@ -925,17 +955,17 @@ Play.prototype = {
 		
 		// Display lives and health label in the top left
 		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '16px Arial', fill: '#ffffff' });
-		this.healthLabel = this.game.add.text(20, 40, 'health: 100',  {font: '14px Arial', fill: '#ffffff' });
+			{ font: '20px Lato', fill: '#fff' });
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
 
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '16px Arial', fill: '#ffffff' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '20px Lato', fill: '#CC9900' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
-		this.colorLabel = this.game.add.text(w-20, 40, 'color: ', { font: '14px Arial', fill: '#ffffff' });
+		this.colorLabel = this.game.add.text(w-20, 50, 'color: ', { font: '14px Lato', fill: '#ffffff' });
 		this.colorLabel.anchor.setTo(1, 0);
-		this.powerLabel = this.game.add.text(w-20, 60, 'power: ', { font: '14px Arial', fill: '#ffffff' });
+		this.powerLabel = this.game.add.text(w-20, 70, 'power: ', { font: '14px Lato', fill: '#ffffff' });
 		this.powerLabel.anchor.setTo(1, 0);
 		
 

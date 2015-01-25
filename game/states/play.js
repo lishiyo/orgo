@@ -357,10 +357,10 @@ Play.prototype = {
 	},
 	
 	pauseGame: function(){
-    var w = this.game.width,
-				h = this.game.height;
+    var w = this.game.world.width,
+				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-40, 20, 'Pause', { font: '24px Arial', fill: '#fff' });
+    var pause_label = this.game.add.text(w-80, h-40, 'PAUSE', { font: '20px Lato', fill: '#ff0080' });
     pause_label.inputEnabled = true;
 		
     pause_label.events.onInputUp.add(function () {
@@ -369,7 +369,7 @@ Play.prototype = {
       this.pauseMenu.anchor.setTo(0.5, 0.5);
 			
       // label to illustrate which menu item was chosen. 
-      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Arial', fill: '#fff' });
+      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
       this.choiceLabel.anchor.setTo(0.5, 0.5);
 			
 			this.game.input.onDown.add(this.unpause, this);
@@ -418,17 +418,17 @@ Play.prototype = {
 		
 		// Display lives and health label in the top left
 		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '16px Arial', fill: '#ffffff' });
-		this.healthLabel = this.game.add.text(20, 40, 'health: 100',  {font: '14px Arial', fill: '#ffffff' });
+			{ font: '20px Lato', fill: '#fff' });
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
 
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '16px Arial', fill: '#ffffff' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '20px Lato', fill: '#CC9900' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
-		this.colorLabel = this.game.add.text(w-20, 40, 'color: ', { font: '14px Arial', fill: '#ffffff' });
+		this.colorLabel = this.game.add.text(w-20, 50, 'color: ', { font: '14px Lato', fill: '#ffffff' });
 		this.colorLabel.anchor.setTo(1, 0);
-		this.powerLabel = this.game.add.text(w-20, 60, 'power: ', { font: '14px Arial', fill: '#ffffff' });
+		this.powerLabel = this.game.add.text(w-20, 70, 'power: ', { font: '14px Lato', fill: '#ffffff' });
 		this.powerLabel.anchor.setTo(1, 0);
 		
 

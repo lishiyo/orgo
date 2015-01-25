@@ -32,33 +32,56 @@ Player.prototype.move = function(){
 			right = this.arrowKeys.right;
 	var keys = [up, down, left, right];
 	
+	var tweenAngle = function(newAngle) {
+		this.body.velocity.y = 0;
+		this.body.velocity.x = 0;
+		this.game.add.tween(this).to( { angle: newAngle }, 100, Phaser.Easing.Linear.None, true);	
+	}.bind(this);
+	
 	var checkLateral = function(dir){
+		
 		if (left.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle + (dir*5) }, 500, Phaser.Easing.Linear.None, true);			
+			tweenAngle(this.angle + (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);			
 		} else if (right.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle - (dir*5) }, 500, Phaser.Easing.Linear.None, true);
+			tweenAngle(this.angle - (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);
+		} else {
+			this.body.velocity.y = dir * 350;
 		}
-	};
+	}.bind(this);
+	
 	
 	var checkVertical = function(dir){
+// 		this.body.velocity.y = 0;
+// 		this.body.velocity.x = 0;
 		if (up.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle + (dir*5) }, 500, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle + (dir * 45));
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
 		} else if (down.isDown) {
-			this.game.add.tween(this).to( { angle: this.angle - (dir*5) }, 500, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle - (dir * 45));
+			
+// 			this.body.velocity.y = 0;
+// 			this.body.velocity.x = 0;
+// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+		} else {
+			this.body.velocity.x = -(dir * 350);
 		}
-	}
+	}.bind(this);
 		
 	if (up.isDown) {
-		this.body.velocity.y = -350;
 		checkLateral(-1);
 	} else if (down.isDown) {
-		this.body.velocity.y = 350;
 		checkLateral(1);
 	} else if (left.isDown) {
-		this.body.velocity.x = -350;
 		checkVertical(1);
 	} else if (right.isDown) {
-		this.body.velocity.x = 350;
 		checkVertical(-1);
 	} else {
 		this.body.velocity.x = 0;
@@ -127,22 +150,30 @@ Player.prototype.fireLevelThree = function(color) {
 
 	// RECYCLE lasers
 Player.prototype.fireLaser = function(x, color) {
-		var laser = this.lasers.getFirstDead();
-		if (!laser) { // first laser
-			return;
-		}
-	
-		// Set the collision area of the laser
-		laser.body.setSize(laser.width, 5, 0, 0);
+	var laser = this.lasers.getFirstDead();
+	if (!laser) { // first laser
+		return;
+	}
 
-		// Initialize the laser
-		laser.anchor.setTo(0.5, 1);
-		laser.reset(x, this.y - this.height/2);
-		laser.body.velocity.y = -400;
+	// Set the collision area of the laser
+	laser.body.setSize(laser.width, 5, 0, 0);
 
-		// Kill the laser when out of the world
-		laser.checkWorldBounds = true;	
-		laser.outOfBoundsKill = true;
+	// Initialize the laser
+	laser.anchor.setTo(0.5, 1);
+	laser.reset(x, this.y - this.height/2);
+
+	// Laser follows angle and velocity of player
+	laser.angle = this.angle;
+	var rad = Phaser.Math.degToRad(this.angle);
+	var dx = 300 * Math.sin(rad),
+			dy = -300 * Math.cos(rad);
+		
+	laser.body.velocity.x = dx;
+	laser.body.velocity.y = dy;
+			
+	// Kill the laser when out of the world
+	laser.checkWorldBounds = true;	
+	laser.outOfBoundsKill = true;
 };
 
 
