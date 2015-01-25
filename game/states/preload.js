@@ -16,7 +16,7 @@ Preload.prototype = {
 
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
-		this.load.image('player', 'assets/player.png');
+		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
 		this.load.image('pixel', 'assets/pixel.png');
 		
 		// Enemies
@@ -53,9 +53,9 @@ Preload.prototype = {
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
-		this.load.image('laserB1', 'assets/weapons/laserBlue08.png');
-		this.load.image('laserR1', 'assets/weapons/laserRed08.png');
-		this.load.image('laserG1', 'assets/weapons/laserGreen14.png');
+		this.load.image('laserB1', 'assets/weapons/laserBlue05.png');
+		this.load.image('laserR1', 'assets/weapons/laserRed05.png');
+		this.load.image('laserG1', 'assets/weapons/laserGreen09.png');
 		this.load.image('laserB2', 'assets/weapons/laserBlue02.png');
 		this.load.image('laserR2', 'assets/weapons/laserRed02.png');
 		this.load.image('laserG2', 'assets/weapons/laserGreen04.png');

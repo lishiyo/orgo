@@ -26,7 +26,7 @@ var EnemyGroup = function(opts, game, parent) {
 	this._currLevel = 1;
 	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
-	
+	// Initialize group at level one
 	this.addEnemies(1);
 };
 
@@ -40,6 +40,7 @@ EnemyGroup.prototype.update = function() {
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
 	var level = this.getEnemyLevel(enemy.key);
+	console.log("dealDamage", this.game.global.enemyAttack[level], enemy);
 	
 	return this.game.global.enemyAttack[level];
 };
@@ -55,16 +56,16 @@ EnemyGroup.prototype.genBoss = function(level) {
 
 	// boss has different stats than normal enemy
 	var startVelY = Math.max(100, level * 25),
-			endVelY = Math.min(level * 200, 400),
-			startVelX = Math.max(10, level * 5),
-			endVelX = Math.min(level * 20, 50);
+			endVelY = Math.min(level * 200, 450),
+			startVelX = Math.max(50, level * 5),
+			endVelX = Math.min(level * 20, 100);
 	
 	boss.body.velocity.y = this.game.rnd.integerInRange(startVelY, endVelY);
 	boss.body.velocity.x = this.game.rnd.integerInRange(startVelX, endVelX);
 
 	boss.health = level * 500;
 	boss.body.collideWorldBounds = true;
-	boss.body.bounce.set(0.75);
+	boss.body.bounce.set(1);
 	
 	// only create one boss per level
 	this._bossTally[level] = true;
@@ -81,7 +82,7 @@ EnemyGroup.prototype.addEnemies = function(level) {
 	for(var i = 1; i <= level; i++) {
 		keys.forEach(function(key) {
 			var keyLevel = key + i;
-			this.createMultiple(5, keyLevel);
+			this.createMultiple(10, keyLevel);
 		}, this);
 	}
 
@@ -95,16 +96,16 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	enemy.anchor.setTo(0.5, 1);
 	enemy.reset(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0);
 
-	// Give a random velocity based on level
-	var startVel = Math.max(75, level * 25),
-			endVel = Math.min(level * 200, 300);
+	// Give a random velocity based on level between 100-400
+	var startVel = Math.max(150, level * 50),
+			endVel = Math.min(level * 200, 400);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 
-	// Create and start animation
+	// for spritesheets
 // 	enemy.animations.add('attack', [0, 1], 4, true);
 // 	enemy.animations.play('attack');
 
-	// enemy health depends on its level
+	// enemy health depends on its own level
 	enemy.health = this.game.global.enemyHealth[level];
 
 	// Kill the enemy when out of the world
@@ -167,40 +168,23 @@ Player.prototype.move = function(){
 		this.game.add.tween(this).to( { angle: newAngle }, 100, Phaser.Easing.Linear.None, true);	
 	}.bind(this);
 	
-	var checkLateral = function(dir){
-		
+	var checkLateral = function(dir){	
 		if (left.isDown) {
-			tweenAngle(this.angle + (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);			
+			tweenAngle(this.angle + (dir * 10));	
 		} else if (right.isDown) {
-			tweenAngle(this.angle - (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);
+			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.y = dir * 350;
+			this.body.velocity.y = dir * 250;
 		}
 	}.bind(this);
 	
-	
 	var checkVertical = function(dir){
-// 		this.body.velocity.y = 0;
-// 		this.body.velocity.x = 0;
 		if (up.isDown) {
-			tweenAngle(this.angle + (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle + (dir * 10));	
 		} else if (down.isDown) {
-			tweenAngle(this.angle - (dir * 45));
-			
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.x = -(dir * 350);
+			this.body.velocity.x = -(dir * 250);
 		}
 	}.bind(this);
 		
@@ -216,21 +200,7 @@ Player.prototype.move = function(){
 		this.body.velocity.x = 0;
 		this.body.velocity.y = 0;
 	}
-	
-	
-// 	if (this.arrowKeys.left.isDown) {
-// 		this.body.velocity.x = -350;
-// 	} else if (this.arrowKeys.right.isDown) {
-// 		this.body.velocity.x = 350;
-// 	} else if (this.arrowKeys.up.isDown) {
-// 		this.body.velocity.y = -350;
-// 	} else if (this.arrowKeys.down.isDown) {
-// 		this.body.velocity.y = 350;
-// 	} else {
-// 		// Stop the player
-// 		this.body.velocity.x = 0;
-// 		this.body.velocity.y = 0;
-// 	}
+
 };
 
 // fire based on weapons level 1-3 and type
@@ -268,9 +238,9 @@ Player.prototype.fireLevelTwo = function(color) {
 	};
 
 Player.prototype.fireLevelThree = function(color) {
-		this.fireLaser(this.x-15);
+		this.fireLaser(this.x - 20);
 		this.fireLaser(this.x);
-		this.fireLaser(this.x+15);
+		this.fireLaser(this.x + 20);
 
 		// Play sound with loud volume
 		this.fireSound.volume = 1;
@@ -285,7 +255,7 @@ Player.prototype.fireLaser = function(x, color) {
 	}
 
 	// Set the collision area of the laser
-	laser.body.setSize(laser.width, 5, 0, 0);
+	laser.body.setSize(laser.width, laser.height-2, 0, 0);
 
 	// Initialize the laser
 	laser.anchor.setTo(0.5, 1);
@@ -299,7 +269,8 @@ Player.prototype.fireLaser = function(x, color) {
 		
 	laser.body.velocity.x = dx;
 	laser.body.velocity.y = dy;
-			
+	
+	
 	// Kill the laser when out of the world
 	laser.checkWorldBounds = true;	
 	laser.outOfBoundsKill = true;
@@ -633,7 +604,7 @@ Play.prototype = {
 
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
-		this.game.physics.arcade.overlap(this.player, this.boss, this.playerHit, null, this);
+		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);
 		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
 		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);
@@ -657,10 +628,10 @@ Play.prototype = {
 
 	createEnemies: function(){
 		// Add a new enemy, freq increasing with the score
-		// At start: one enemy per 1000ms
+		// At start: one enemy per 1200ms
 		// After 400 points: one enemy every 500ms
 		if (this._nextEnemyTime < this.game.time.now) {
-			var start = 1000, 
+			var start = 1200, 
 					end = 500, 
 					score = 400;
 			
@@ -737,6 +708,9 @@ Play.prototype = {
 		powerup.body.velocity.y = 150;
 		powerup.body.angularVelocity = 100;
 		
+		// tween for throbbing affect
+		this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+		
 		powerup.checkWorldBounds = true;	
 		powerup.outOfBoundsKill = true;	
 	},
@@ -762,21 +736,20 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
-		// remove the enemy with sound
-		
 		if (enemy !== this.boss) {
 			enemy.kill();
-		}
+		} 
 		
 		this.hitSound.play();
 
-		// Decrease power level by one, down to min of 1
-		this._oldPowerLevel = this._currPowerLevel;
-		this._currPowerLevel = Math.max(this._currPowerLevel-1, 1);
-
+		// Decrease power level by one, down to floor of 1
+		if (this._currPowerLevel > 1) {
+			this.swapPowerLevel(-1);
+		}
+		
 		// Make the screen flash
 		this.game.stage.backgroundColor = '#fff';
-		this.game.time.events.add(50, this.resetBackground, this);
+		this.game.time.events.add(30, this.resetBackground, this);
 		
 		// Decrease HP by amount depending on enemy strength
 		this.player.health -= this.enemies.dealDamage(enemy);
@@ -840,6 +813,7 @@ Play.prototype = {
 	enemyHit: function(enemy, laser) {
 		// Recoil the enemy
 		laser.kill();		
+		
 		enemy.y -= 10;
 
 		// Reduce health based on power level
@@ -878,19 +852,19 @@ Play.prototype = {
 		this.colorLabel.text = 'color: ' + this._currColor;
 	},
 	
-	swapLaser: function(color) {
+	swapPowerLevel: function(dx) {
+		this._oldPowerLevel = this._currPowerLevel;
+		this._currPowerLevel -= dx;
+		this.swapLaser();
+		
+		this.powerLabel.text = 'power: ' + this._currPowerLevel;
+	},
+	
+	swapLaser: function() {
 		this.lasers.removeAll();
 		
 		var laserKey = "laser" + this._currColor + this._currPowerLevel;
 		this.lasers.createMultiple(50, laserKey);
-	},
-	
-	swapPowerLevel: function(dx) {
-		this._oldPowerLevel = this._currPowerLevel;
-		this._currPowerLevel += dx;
-		this.swapLaser();
-		
-		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
 	pauseGame: function(){
@@ -955,11 +929,11 @@ Play.prototype = {
 		
 		// Display lives and health label in the top left
 		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '20px Lato', fill: '#fff' });
+			{ font: '22px Lato', fill: '#C8F526' });
 		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
 
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '20px Lato', fill: '#CC9900' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
@@ -1012,7 +986,7 @@ Preload.prototype = {
 
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
-		this.load.image('player', 'assets/player.png');
+		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
 		this.load.image('pixel', 'assets/pixel.png');
 		
 		// Enemies
@@ -1049,9 +1023,9 @@ Preload.prototype = {
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
-		this.load.image('laserB1', 'assets/weapons/laserBlue08.png');
-		this.load.image('laserR1', 'assets/weapons/laserRed08.png');
-		this.load.image('laserG1', 'assets/weapons/laserGreen14.png');
+		this.load.image('laserB1', 'assets/weapons/laserBlue05.png');
+		this.load.image('laserR1', 'assets/weapons/laserRed05.png');
+		this.load.image('laserG1', 'assets/weapons/laserGreen09.png');
 		this.load.image('laserB2', 'assets/weapons/laserBlue02.png');
 		this.load.image('laserR2', 'assets/weapons/laserRed02.png');
 		this.load.image('laserG2', 'assets/weapons/laserGreen04.png');

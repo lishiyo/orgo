@@ -96,7 +96,7 @@ Play.prototype = {
 
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
-		this.game.physics.arcade.overlap(this.player, this.boss, this.playerHit, null, this);
+		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);
 		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
 		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);
@@ -120,10 +120,10 @@ Play.prototype = {
 
 	createEnemies: function(){
 		// Add a new enemy, freq increasing with the score
-		// At start: one enemy per 1000ms
+		// At start: one enemy per 1200ms
 		// After 400 points: one enemy every 500ms
 		if (this._nextEnemyTime < this.game.time.now) {
-			var start = 1000, 
+			var start = 1200, 
 					end = 500, 
 					score = 400;
 			
@@ -200,6 +200,9 @@ Play.prototype = {
 		powerup.body.velocity.y = 150;
 		powerup.body.angularVelocity = 100;
 		
+		// tween for throbbing affect
+		this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+		
 		powerup.checkWorldBounds = true;	
 		powerup.outOfBoundsKill = true;	
 	},
@@ -225,21 +228,20 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
-		// remove the enemy with sound
-		
 		if (enemy !== this.boss) {
 			enemy.kill();
-		}
+		} 
 		
 		this.hitSound.play();
 
-		// Decrease power level by one, down to min of 1
-		this._oldPowerLevel = this._currPowerLevel;
-		this._currPowerLevel = Math.max(this._currPowerLevel-1, 1);
-
+		// Decrease power level by one, down to floor of 1
+		if (this._currPowerLevel > 1) {
+			this.swapPowerLevel(-1);
+		}
+		
 		// Make the screen flash
 		this.game.stage.backgroundColor = '#fff';
-		this.game.time.events.add(50, this.resetBackground, this);
+		this.game.time.events.add(30, this.resetBackground, this);
 		
 		// Decrease HP by amount depending on enemy strength
 		this.player.health -= this.enemies.dealDamage(enemy);
@@ -303,6 +305,7 @@ Play.prototype = {
 	enemyHit: function(enemy, laser) {
 		// Recoil the enemy
 		laser.kill();		
+		
 		enemy.y -= 10;
 
 		// Reduce health based on power level
@@ -341,19 +344,19 @@ Play.prototype = {
 		this.colorLabel.text = 'color: ' + this._currColor;
 	},
 	
-	swapLaser: function(color) {
+	swapPowerLevel: function(dx) {
+		this._oldPowerLevel = this._currPowerLevel;
+		this._currPowerLevel -= dx;
+		this.swapLaser();
+		
+		this.powerLabel.text = 'power: ' + this._currPowerLevel;
+	},
+	
+	swapLaser: function() {
 		this.lasers.removeAll();
 		
 		var laserKey = "laser" + this._currColor + this._currPowerLevel;
 		this.lasers.createMultiple(50, laserKey);
-	},
-	
-	swapPowerLevel: function(dx) {
-		this._oldPowerLevel = this._currPowerLevel;
-		this._currPowerLevel += dx;
-		this.swapLaser();
-		
-		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
 	pauseGame: function(){
@@ -418,11 +421,11 @@ Play.prototype = {
 		
 		// Display lives and health label in the top left
 		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '20px Lato', fill: '#fff' });
+			{ font: '22px Lato', fill: '#C8F526' });
 		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
 
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '20px Lato', fill: '#CC9900' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right

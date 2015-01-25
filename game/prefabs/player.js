@@ -38,40 +38,23 @@ Player.prototype.move = function(){
 		this.game.add.tween(this).to( { angle: newAngle }, 100, Phaser.Easing.Linear.None, true);	
 	}.bind(this);
 	
-	var checkLateral = function(dir){
-		
+	var checkLateral = function(dir){	
 		if (left.isDown) {
-			tweenAngle(this.angle + (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);			
+			tweenAngle(this.angle + (dir * 10));	
 		} else if (right.isDown) {
-			tweenAngle(this.angle - (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);
+			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.y = dir * 350;
+			this.body.velocity.y = dir * 250;
 		}
 	}.bind(this);
 	
-	
 	var checkVertical = function(dir){
-// 		this.body.velocity.y = 0;
-// 		this.body.velocity.x = 0;
 		if (up.isDown) {
-			tweenAngle(this.angle + (dir * 45));
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle + (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle + (dir * 10));	
 		} else if (down.isDown) {
-			tweenAngle(this.angle - (dir * 45));
-			
-// 			this.body.velocity.y = 0;
-// 			this.body.velocity.x = 0;
-// 			this.game.add.tween(this).to( { angle: this.angle - (dir * 45) }, 100, Phaser.Easing.Linear.None, true);	
+			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.x = -(dir * 350);
+			this.body.velocity.x = -(dir * 250);
 		}
 	}.bind(this);
 		
@@ -87,21 +70,7 @@ Player.prototype.move = function(){
 		this.body.velocity.x = 0;
 		this.body.velocity.y = 0;
 	}
-	
-	
-// 	if (this.arrowKeys.left.isDown) {
-// 		this.body.velocity.x = -350;
-// 	} else if (this.arrowKeys.right.isDown) {
-// 		this.body.velocity.x = 350;
-// 	} else if (this.arrowKeys.up.isDown) {
-// 		this.body.velocity.y = -350;
-// 	} else if (this.arrowKeys.down.isDown) {
-// 		this.body.velocity.y = 350;
-// 	} else {
-// 		// Stop the player
-// 		this.body.velocity.x = 0;
-// 		this.body.velocity.y = 0;
-// 	}
+
 };
 
 // fire based on weapons level 1-3 and type
@@ -139,9 +108,9 @@ Player.prototype.fireLevelTwo = function(color) {
 	};
 
 Player.prototype.fireLevelThree = function(color) {
-		this.fireLaser(this.x-15);
+		this.fireLaser(this.x - 20);
 		this.fireLaser(this.x);
-		this.fireLaser(this.x+15);
+		this.fireLaser(this.x + 20);
 
 		// Play sound with loud volume
 		this.fireSound.volume = 1;
@@ -156,7 +125,7 @@ Player.prototype.fireLaser = function(x, color) {
 	}
 
 	// Set the collision area of the laser
-	laser.body.setSize(laser.width, 5, 0, 0);
+	laser.body.setSize(laser.width, laser.height-2, 0, 0);
 
 	// Initialize the laser
 	laser.anchor.setTo(0.5, 1);
@@ -170,7 +139,8 @@ Player.prototype.fireLaser = function(x, color) {
 		
 	laser.body.velocity.x = dx;
 	laser.body.velocity.y = dy;
-			
+	
+	
 	// Kill the laser when out of the world
 	laser.checkWorldBounds = true;	
 	laser.outOfBoundsKill = true;
