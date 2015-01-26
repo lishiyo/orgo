@@ -718,6 +718,8 @@ Play.prototype = {
 	/* --- UTILS --- */
 	
 	getPowerColor: function(key){
+		console.log("getPowerColor", this._colors);
+		
 		for (var i = 0; i < this._colors.length; i++) {
 			if (key.search(this._colors[i]) !== -1) {
 				return this._colors[i];
@@ -785,16 +787,19 @@ Play.prototype = {
 	takePowerUp: function(player, powerup) {
 		// initialize to first taken powerup
 		var newColor = this.getPowerColor(powerup.key);
-		this._currColor = (this._currColor || newColor);
 		
 		// if powerup is same color and >= level, go up one power level
 		// if different color, reset power level to one
-		if (this._currColor !== newColor) {
+		if (this._currColor === undefined) { // first powerup 
+			console.log("undefined currCol", this._currColor, newColor);
+			this._currColor = newColor;
+			this.swapPowerLevel(0);
+			this.swapColor(newColor);
+		} else if (this._currColor !== newColor) {
 			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
 		} else {		
 			this.colorLabel.text = 'color: ' + this._currColor;
-			
 			var newLevel = this.checkPowerLevel(powerup.key);
 			if (newLevel >= this._currPowerLevel)	{
 				this.swapPowerLevel(1);
@@ -854,7 +859,7 @@ Play.prototype = {
 	
 	swapPowerLevel: function(dx) {
 		this._oldPowerLevel = this._currPowerLevel;
-		this._currPowerLevel -= dx;
+		this._currPowerLevel += dx;
 		this.swapLaser();
 		
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
