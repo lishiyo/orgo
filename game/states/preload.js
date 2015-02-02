@@ -40,16 +40,14 @@ Preload.prototype = {
 		this.load.image('powerupB3', 'assets/powerups/powerupBlue_bolt.png');
 		this.load.image('powerupG3', 'assets/powerups/powerupGreen_bolt.png');
 		this.load.image('powerupR3', 'assets/powerups/powerupRed_bolt.png');
-		
-		// Attack Powerups - star for speed
-		this.load.image('speed1', 'assets/powerups/star_bronze.png');
-		this.load.image('speed2', 'assets/powerups/star_silver.png');
-		this.load.image('speed3', 'assets/powerups/star_gold.png');
-		
-		// Defense powers - shield for health and pills for extra life
+			
+		// Defense Powers - shields for health and pills for additional life
 		this.load.image('shieldBronze', 'assets/powerups/shield_bronze.png');
 		this.load.image('shieldSilver', 'assets/powerups/shield_silver.png');
 		this.load.image('shieldGold', 'assets/powerups/shield_gold.png');
+		this.load.image('pillB', 'assets/powerups/pill_blue.png');
+		this.load.image('pillG', 'assets/powerups/pill_green.png');
+		this.load.image('pillR', 'assets/powerups/pill_red.png');
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
@@ -63,10 +61,18 @@ Preload.prototype = {
 		this.load.image('laserR3', 'assets/weapons/laserRed12.png');
 		this.load.image('laserG3', 'assets/weapons/laserGreen06.png');
 		
-		// pause button
-		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
+		// UI
+// 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
+		this.load.image('glassMenu', 'assets/ui/glassPanel_corners_wide.png');
+		this.load.image('starBronze', 'assets/powerups/star_bronze.png');
+		this.load.image('starSilver', 'assets/powerups/star_silver.png');
+		this.load.image('starGold', 'assets/powerups/star_gold.png');
+		this.load.image('gemR', 'assets/items/gemRed.png');
+		this.load.image('gemG', 'assets/items/gemGreen.png');
+		this.load.image('gemB', 'assets/items/gemBlue.png');
+		this.load.image('heart', 'assets/ui/hud_heartFull_small.png')
 
-		// Load all sound effects
+		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);
 		this.load.audio('fireSound', ['assets/bullet.ogg', 'assets/bullet.mp3']);
 		this.load.audio('enemyDie', ['assets/die.ogg', 'assets/die.mp3']);

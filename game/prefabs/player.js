@@ -7,10 +7,11 @@ var Player = function(opts, game, x, y, frame) {
   this.anchor.setTo(0.5, 0.5);
 	this.game.physics.arcade.enable(this);
 	this.body.collideWorldBounds = true;
+	this.body.bounce.y = 1;
+	this.body.bounce.x = 1;
 	
 	this.alive = true;
 	this.health = this.game.global.health; // starting HP
-
 	this.arrowKeys = opts.arrowKeys;
 	
 	this.fireSound = this.game.add.audio('fireSound');
@@ -81,7 +82,7 @@ Player.prototype.fireWeapon = function(level, lasers) {
 	var currY = this.y;
 	this.game.add.tween(this).to({y: currY + 5}, 50).to({y: currY}, 50).start();
 	
-		if (level === 1) {
+		if (level <= 1) {
 			this.fireLevelOne();
 		} else if (level === 2) {
 			this.fireLevelTwo();

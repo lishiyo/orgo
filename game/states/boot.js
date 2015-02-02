@@ -20,10 +20,8 @@ Boot.prototype = {
 	},
 
 	create: function() { 
-		// Set background color and arcade system
 		this.game.stage.backgroundColor = this.game.global.bg;
 		this.game.physics.startSystem(Phaser.Physics.ARCADE);
-
 		this.game.state.start('preload');
 	}
 	

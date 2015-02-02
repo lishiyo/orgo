@@ -2,12 +2,12 @@
 
 var EnemyGroup = function(opts, game, parent) {
 	Phaser.Group.call(this, game, parent);
-	
+	this.game = game;
 	this.enableBody = true;	
 	this._currLevel = 1;
 	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
-	// Initialize group at level one
+	// Initialize enemies at level one
 	this.addEnemies(1);
 };
 
@@ -20,15 +20,13 @@ EnemyGroup.prototype.update = function() {
 };
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
-	var level = this.getEnemyLevel(enemy.key);
-	console.log("dealDamage", this.game.global.enemyAttack[level], enemy);
-	
+	var level = this.getEnemyLevel(enemy.key);	
 	return this.game.global.enemyAttack[level];
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
 	if (this._bossTally[level]) { return; }
-	// remain 1 for now
+	// remain level 1 for now
 	var bossKey = 'boss' + 1;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
 	
@@ -57,9 +55,9 @@ EnemyGroup.prototype.genBoss = function(level) {
 EnemyGroup.prototype.addEnemies = function(level) {
 	this.removeAll(true);
 	this._currLevel = level;
+	this.enableBody = true;
 	
 	var keys = Phaser.Utils.shuffle(["alienB", "alienR", "alienG"]);
-	
 	for(var i = 1; i <= level; i++) {
 		keys.forEach(function(key) {
 			var keyLevel = key + i;
@@ -77,11 +75,11 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	enemy.anchor.setTo(0.5, 1);
 	enemy.reset(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0);
 
-	// Give a random velocity based on level between 100-400
+	// Give a random velocity based on level between 100-500
 	var startVel = Math.max(150, level * 50),
-			endVel = Math.min(level * 200, 400);
+			endVel = Math.min(level * 200, 500);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
-
+		
 	// for spritesheets
 // 	enemy.animations.add('attack', [0, 1], 4, true);
 // 	enemy.animations.play('attack');

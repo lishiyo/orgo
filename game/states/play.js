@@ -3,13 +3,41 @@
 var Scoreboard = require('../prefabs/scoreboard');
 var Player = require('../prefabs/player');
 var EnemyGroup = require('../prefabs/enemyGroup');
-
+var PowerUpGroup = require('../prefabs/powerupGroup');
 
 function Play() {};
 
 Play.prototype = {
-	create: function() {
-		/* --- Display the labels on the screen --- */
+	create: function() {		
+		/* --- Initialise variables --- */
+
+		// clicking mouse or pressing enter pauses game
+		this.game.input.onDown.add(this.pauseGame, this);
+		this.pauseKey = this.game.input.keyboard
+			 .addKey(Phaser.Keyboard.ENTER);
+		this.game.paused = false;
+		
+		// starting variables
+		this._levels = ["1", "2", "3"];
+		this._colors = ["B", "G", "R"];	
+		this.lives = this.game.global.lives;
+		this.game.global.score = 0;
+		this._nextLaserTime = 0;
+		this._nextEnemyTime = 0;	
+		this._oldEnemyLevel = 1;
+		this._currEnemyLevel = 1;		
+		this._oldPowerLevel = 0;
+		this._currPowerLevel = 0;
+		
+		// Add sounds
+		this.bonusSound = this.game.add.audio('takeBonus');
+		this.dieSound = this.game.add.audio('enemyDie');
+		this.hitSound = this.game.add.audio('playerHit');
+		
+		// Initialize pause controls
+		this.pauseGame();
+		
+		/* --- Display UI labels --- */
 		this.displayLabels();
 		
 		/* --- Add all sprites/groups --- */
@@ -29,10 +57,17 @@ Play.prototype = {
 		}, this.game, this.game.world.centerX, 450);
 		this.game.add.existing(this.player);
 		
-		// Create default powerups
-		this.powerups = this.game.add.group();
-		this.powerups.enableBody = true;
-		this.createPowerUps(1);
+		// Create default powerups (red, green, blue)
+			this.powerups = new PowerUpGroup(this.game);
+			this.powerups.createPowerUps(1);
+// 		this.powerups = this.game.add.group();
+// 		this.powerups.enableBody = true;
+// 		this.createPowerUps(1);
+				
+		// Create pills (red, green, blue)
+		
+		// Create shields (bronze, gold, silver)
+		
 
 		/* --- Initialise emitters --- */
 
@@ -52,44 +87,24 @@ Play.prototype = {
 
 		// Init emitter for enemy explosions
 		this.explosionEmitter = this.game.add.emitter(0, 0, 50);
-		this.explosionEmitter.makeParticles('pixel');
-		this.explosionEmitter.setYSpeed(-150, 150);
-		this.explosionEmitter.setXSpeed(-150, 150);
+// 		this.explosionEmitter.makeParticles('pixel');
+		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver'], 1, 
+                                   100, false, false);
+		this.explosionEmitter.setYSpeed(-400, 400);
+		this.explosionEmitter.setXSpeed(-400, 400);		
 		this.explosionEmitter.gravity = 0;
-
-		/* --- Initialise variables --- */
-
-		// clicking mouse or pressing enter pauses game
-		this.game.input.onDown.add(this.pauseGame, this);
-		this.pauseKey = this.game.input.keyboard
-			 .addKey(Phaser.Keyboard.ENTER);
-		this.game.paused = false;
-		
-		// starting variables
-		this.lives = this.game.global.lives;
-		this.game.global.score = 0;
-		this._nextLaserTime = 0;
-		this._nextEnemyTime = 0;
-		this._oldEnemyLevel = 1;
-		this._currEnemyLevel = 1;
-		this._colors = ["B", "G", "R"];
 	
-// 		this.bonus = 1;
-		this._oldPowerLevel = 1;
-		this._currPowerLevel = 1;
-		
-		// Add sounds
-		this.bonusSound = this.game.add.audio('takeBonus');
-		this.dieSound = this.game.add.audio('enemyDie');
-		this.hitSound = this.game.add.audio('playerHit');
 
 		// Create new powerup every 8 seconds
-		this.game.physics.setBoundsToWorld();
-		this.game.time.events.loop(8000, this.newPowerUp, this);
+		this.game.physics.setBoundsToWorld();		
+		this.game.time.events.loop(8000, this.genPowerUps, this);
 		
-		// Initialize pause controls
-		this.pauseGame();
+		
 },
+	
+	genPowerUps: function(){
+		this.powerups.newPowerUp(this._oldPowerLevel, this._currPowerLevel);
+	},
 
 	update: function() {
 		if (!this.player.alive) { return; }
@@ -154,64 +169,14 @@ Play.prototype = {
 	generateEnemy: function(enemyLevel) {
 // 		var enemy = this.enemies.getFirstDead();
 		var enemy = this.enemies.getRandom();
-		if (!enemy) { return; } // all enemies still alive
+		if (!enemy) { return; } // return if all enemies still alive
 
 		this.enemies.resetEnemy(enemy);
-	},
-	
-	/* --- RECYCLE POWERUPS --- */
-	
-	// initialize this.powerups with 3 random powerups
-	createPowerUps: function(level) {
-		// empty out powerups
-		this.powerups.removeAll(true);
-	
-		var keysL1 = ['powerupB1', 'powerupG1', 'powerupR1'],
-				keysL2 = ['powerupB2', 'powerupG2', 'powerupR2'],
-				keysL3 = ['powerupB3', 'powerupG3', 'powerupR3'];
-		
-		if (level === 1) {
-			var keys = Phaser.Utils.shuffle(keysL1);
-		} else if (level === 2) {
-			var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2));
-		} else {
-			var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2).concat(keysL3));
-		}
-		
-		for (var i = 0; i < keys.length; i++) {
-			this.powerups.create(0, 0, keys[i], 1, false);
-		}
-		
-		return this.powerups;
-	},
-	
-	// generate next random powerup based on current power level
-	newPowerUp: function() {	
-		if (this._oldPowerLevel !== this._currPowerLevel) {		
-			this.createPowerUps(this._currPowerLevel);		
-		}
-
-		var powerup = this.powerups.getFirstDead();				
-		if (!powerup) { return; }
-		
-		// revive the powerup
-		powerup.anchor.setTo(0.5, 0.5);
-		powerup.reset(this.game.rnd.integerInRange(20, this.game.world.width-40), -powerup.height/2);
-		powerup.body.velocity.y = 150;
-		powerup.body.angularVelocity = 100;
-		
-		// tween for throbbing affect
-		this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
-		
-		powerup.checkWorldBounds = true;	
-		powerup.outOfBoundsKill = true;	
 	},
 	
 	/* --- UTILS --- */
 	
 	getPowerColor: function(key){
-		console.log("getPowerColor", this._colors);
-		
 		for (var i = 0; i < this._colors.length; i++) {
 			if (key.search(this._colors[i]) !== -1) {
 				return this._colors[i];
@@ -220,7 +185,7 @@ Play.prototype = {
 	},
 	
 	checkPowerLevel: function(key){
-		var levels = ["1", "2", "3"];
+		var levels = this._levels;
 		for (var i = 0; i < levels.length; i++) {
 			if (key.search(levels[i]) !== -1) {
 				return levels[i];
@@ -230,10 +195,12 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
+		this.player.y += (enemy.body.velocity.y / 10);
+					
 		if (enemy !== this.boss) {
-			enemy.kill();
+			enemy.kill(); // only kill non-bosses upon collision
 		} 
-		
+					
 		this.hitSound.play();
 
 		// Decrease power level by one, down to floor of 1
@@ -248,7 +215,6 @@ Play.prototype = {
 		// Decrease HP by amount depending on enemy strength
 		this.player.health -= this.enemies.dealDamage(enemy);
 		this.healthLabel.text = 'health: ' + this.player.health;
-		
 		
 		if (this.player.health <= 0) {
 			this.takePlayerLife();
@@ -277,29 +243,31 @@ Play.prototype = {
 	},
 	
 	takePowerUp: function(player, powerup) {
-		// initialize to first taken powerup
+		// current powerup's color
 		var newColor = this.getPowerColor(powerup.key);
-		
-		// if powerup is same color and >= level, go up one power level
-		// if different color, reset power level to one
+			
+		// initialize to first taken powerup if no color yet
 		if (this._currColor === undefined) { // first powerup 
-			console.log("undefined currCol", this._currColor, newColor);
 			this._currColor = newColor;
-			this.swapPowerLevel(0);
+			this.swapPowerLevel(1);
 			this.swapColor(newColor);
+		// if different color, reset power level to one
 		} else if (this._currColor !== newColor) {
 			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
 		} else {		
+		// if powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
 			var newLevel = this.checkPowerLevel(powerup.key);
-			if (newLevel >= this._currPowerLevel)	{
+			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
+		// update whenever you pick up another powerup;
+		this.powerups.updateColorLvl(this._currColor);
 		
 		// Tween the player with sound
 		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
@@ -310,7 +278,6 @@ Play.prototype = {
 	enemyHit: function(enemy, laser) {
 		// Recoil the enemy
 		laser.kill();		
-		
 		enemy.y -= 10;
 
 		// Reduce health based on power level
@@ -336,7 +303,6 @@ Play.prototype = {
 	/*-- UI --- */
 	
 	increaseScore: function(x) {
-		// Inscrease the score by 'x' and update the label
 		this.game.global.score += x;
 		this.scoreLabel.text = 'score: ' + this.game.global.score;
 	},
@@ -357,6 +323,7 @@ Play.prototype = {
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
+	// swap laser whenever you change level or color
 	swapLaser: function() {
 		this.lasers.removeAll();
 		
@@ -373,10 +340,10 @@ Play.prototype = {
 		
     pause_label.events.onInputUp.add(function () {
 			this.game.paused = true;
-			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
+// 			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
+			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'glassMenu')
       this.pauseMenu.anchor.setTo(0.5, 0.5);
 			
-      // label to illustrate which menu item was chosen. 
       this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
       this.choiceLabel.anchor.setTo(0.5, 0.5);
 			
@@ -425,9 +392,15 @@ Play.prototype = {
 				h = this.game.world.height;
 		
 		// Display lives and health label in the top left
-		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '22px Lato', fill: '#C8F526' });
-		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
+		this.livesLabel = this.game.add.text(20, 20, 'lives: ', 
+			{ font: '22px Lato', fill: '#fff' });
+		var startX = 90;
+		for (var i = 0; i < this.lives; i++) {
+			var dx = i * 30;
+			var heart = this.game.add.sprite(startX + dx, 20, 'heart');
+			heart.anchor.setTo(0, 0);
+		};		
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
 
 		// Display score label in the top right
 		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
@@ -438,8 +411,7 @@ Play.prototype = {
 		this.colorLabel.anchor.setTo(1, 0);
 		this.powerLabel = this.game.add.text(w-20, 70, 'power: ', { font: '14px Lato', fill: '#ffffff' });
 		this.powerLabel.anchor.setTo(1, 0);
-		
-
+			
 		// Capture and setup keys
 		this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.UP, Phaser.Keyboard.DOWN, Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR]);
 

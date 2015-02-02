@@ -3,7 +3,7 @@
 
 //global variables
 window.onload = function () {
-  var game = new Phaser.Game(1100, 630, Phaser.AUTO, 'orgo');
+  var game = new Phaser.Game(1300, 630, Phaser.AUTO, 'orgo');
 
   // Game States
   game.state.add('boot', require('./states/boot'));
@@ -16,17 +16,17 @@ window.onload = function () {
 
   game.state.start('boot');
 };
-},{"./states/boot":5,"./states/bullet":6,"./states/gameover":7,"./states/menu":8,"./states/play":9,"./states/preload":10}],2:[function(require,module,exports){
+},{"./states/boot":6,"./states/bullet":7,"./states/gameover":8,"./states/menu":9,"./states/play":10,"./states/preload":11}],2:[function(require,module,exports){
 'use strict';
 
 var EnemyGroup = function(opts, game, parent) {
 	Phaser.Group.call(this, game, parent);
-	
+	this.game = game;
 	this.enableBody = true;	
 	this._currLevel = 1;
 	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
-	// Initialize group at level one
+	// Initialize enemies at level one
 	this.addEnemies(1);
 };
 
@@ -39,15 +39,13 @@ EnemyGroup.prototype.update = function() {
 };
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
-	var level = this.getEnemyLevel(enemy.key);
-	console.log("dealDamage", this.game.global.enemyAttack[level], enemy);
-	
+	var level = this.getEnemyLevel(enemy.key);	
 	return this.game.global.enemyAttack[level];
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
 	if (this._bossTally[level]) { return; }
-	// remain 1 for now
+	// remain level 1 for now
 	var bossKey = 'boss' + 1;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
 	
@@ -76,9 +74,9 @@ EnemyGroup.prototype.genBoss = function(level) {
 EnemyGroup.prototype.addEnemies = function(level) {
 	this.removeAll(true);
 	this._currLevel = level;
+	this.enableBody = true;
 	
 	var keys = Phaser.Utils.shuffle(["alienB", "alienR", "alienG"]);
-	
 	for(var i = 1; i <= level; i++) {
 		keys.forEach(function(key) {
 			var keyLevel = key + i;
@@ -96,11 +94,11 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	enemy.anchor.setTo(0.5, 1);
 	enemy.reset(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0);
 
-	// Give a random velocity based on level between 100-400
+	// Give a random velocity based on level between 100-500
 	var startVel = Math.max(150, level * 50),
-			endVel = Math.min(level * 200, 400);
+			endVel = Math.min(level * 200, 500);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
-
+		
 	// for spritesheets
 // 	enemy.animations.add('attack', [0, 1], 4, true);
 // 	enemy.animations.play('attack');
@@ -137,10 +135,11 @@ var Player = function(opts, game, x, y, frame) {
   this.anchor.setTo(0.5, 0.5);
 	this.game.physics.arcade.enable(this);
 	this.body.collideWorldBounds = true;
+	this.body.bounce.y = 1;
+	this.body.bounce.x = 1;
 	
 	this.alive = true;
 	this.health = this.game.global.health; // starting HP
-
 	this.arrowKeys = opts.arrowKeys;
 	
 	this.fireSound = this.game.add.audio('fireSound');
@@ -211,7 +210,7 @@ Player.prototype.fireWeapon = function(level, lasers) {
 	var currY = this.y;
 	this.game.add.tween(this).to({y: currY + 5}, 50).to({y: currY}, 50).start();
 	
-		if (level === 1) {
+		if (level <= 1) {
 			this.fireLevelOne();
 		} else if (level === 2) {
 			this.fireLevelTwo();
@@ -279,6 +278,113 @@ Player.prototype.fireLaser = function(x, color) {
 
 module.exports = Player;
 },{}],4:[function(require,module,exports){
+'use strict';
+
+var PowerUpGroup = function(game, parent) {
+	Phaser.Group.call(this, game, parent);
+	this.game = game;
+	this.enableBody = true;	
+	this.colorLevels = {
+		'R': 0,
+		'G': 0,
+		'B': 0
+	};
+	this.w = this.game.world.width;
+	this.h = this.game.world.height;
+	this.startX = this.w - 120;
+	this.startY = {
+		'R': this.h - 75,
+		'G': this.h - 50,
+		'B': this.h - 25
+	}
+};
+
+PowerUpGroup.prototype = Object.create(Phaser.Group.prototype);
+PowerUpGroup.prototype.constructor = PowerUpGroup;
+
+PowerUpGroup.prototype.update = function() {
+  
+};
+
+/* --- RECYCLE POWERUPS --- */
+	
+	// initialize this.powerups with 3 random powerups
+PowerUpGroup.prototype.createPowerUps = function(level) {
+	console.log("refab createPowerUps with level:", level);
+	
+	// empty out powerups
+	this.removeAll(true);
+
+	var keysL1 = ['powerupB1', 'powerupG1', 'powerupR1'],
+			keysL2 = ['powerupB2', 'powerupG2', 'powerupR2'],
+			keysL3 = ['powerupB3', 'powerupG3', 'powerupR3'];
+
+	if (level === 1) {
+		var keys = Phaser.Utils.shuffle(keysL1);
+	} else if (level === 2) {
+		var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2));
+	} else {
+		var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2).concat(keysL3));
+	}
+
+	for (var i = 0; i < keys.length; i++) {
+		this.create(0, 0, keys[i], 1, false);
+	}
+
+	return this;
+};
+	
+	// generate next random powerup based on current power level
+PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {	
+	console.log("refab newPowerUp", oldLevel, currLevel);
+	
+	if (oldLevel !== currLevel) {		
+		this.createPowerUps(currLevel);	// refresh powerups array
+	}
+
+	var powerup = this.getFirstDead();				
+	if (!powerup) { return; }
+
+	// revive the powerup
+	powerup.anchor.setTo(0.5, 0.5);
+	powerup.reset(this.game.rnd.integerInRange(20, this.game.world.width-40), -powerup.height/2);
+	powerup.body.velocity.y = 150;
+	powerup.body.angularVelocity = 100;
+
+	// tween for throbbing effect
+	this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+
+	powerup.checkWorldBounds = true;
+	powerup.outOfBoundsKill = true;
+	
+	return powerup;
+};
+
+PowerUpGroup.prototype.updateColorLvl = function(color){
+	if (this.colorLevels[color] > 3) {
+		return;
+	} else if (this.colorLevels[color] === 3) {
+		this.finishColorLvl(color)
+	}
+	
+	this.colorLevels[color] += 1
+	this.renderColorLvl(color);
+};
+
+PowerUpGroup.prototype.renderColorLvl = function(color){
+	var dx = this.startX + ((this.colorLevels[color] - 1) * 40);
+	var gemSprite = 'gem' + color;
+	
+	var gem = this.game.add.sprite(dx, this.startY[color], gemSprite);
+  gem.anchor.setTo(0.5, 0.5);
+};
+
+PowerUpGroup.prototype.finishColorLvl = function(color){
+	console.log("finished");
+};
+
+module.exports = PowerUpGroup;
+},{}],5:[function(require,module,exports){
 'use strict';
 
 var Scoreboard = function(game) {
@@ -382,7 +488,7 @@ Scoreboard.prototype.startClick = function(){
 
 module.exports = Scoreboard;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 function Boot() {
@@ -405,10 +511,8 @@ Boot.prototype = {
 	},
 
 	create: function() { 
-		// Set background color and arcade system
 		this.game.stage.backgroundColor = this.game.global.bg;
 		this.game.physics.startSystem(Phaser.Physics.ARCADE);
-
 		this.game.state.start('preload');
 	}
 	
@@ -416,9 +520,9 @@ Boot.prototype = {
 
 module.exports = Boot;
 
-},{}],6:[function(require,module,exports){
-
 },{}],7:[function(require,module,exports){
+
+},{}],8:[function(require,module,exports){
 'use strict';
 function GameOver() {}
 
@@ -445,7 +549,7 @@ GameOver.prototype = {
 };
 module.exports = GameOver;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 function Menu() {}
 
@@ -505,19 +609,47 @@ Menu.prototype = {
 
 module.exports = Menu;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 var Scoreboard = require('../prefabs/scoreboard');
 var Player = require('../prefabs/player');
 var EnemyGroup = require('../prefabs/enemyGroup');
-
+var PowerUpGroup = require('../prefabs/powerupGroup');
 
 function Play() {};
 
 Play.prototype = {
-	create: function() {
-		/* --- Display the labels on the screen --- */
+	create: function() {		
+		/* --- Initialise variables --- */
+
+		// clicking mouse or pressing enter pauses game
+		this.game.input.onDown.add(this.pauseGame, this);
+		this.pauseKey = this.game.input.keyboard
+			 .addKey(Phaser.Keyboard.ENTER);
+		this.game.paused = false;
+		
+		// starting variables
+		this._levels = ["1", "2", "3"];
+		this._colors = ["B", "G", "R"];	
+		this.lives = this.game.global.lives;
+		this.game.global.score = 0;
+		this._nextLaserTime = 0;
+		this._nextEnemyTime = 0;	
+		this._oldEnemyLevel = 1;
+		this._currEnemyLevel = 1;		
+		this._oldPowerLevel = 0;
+		this._currPowerLevel = 0;
+		
+		// Add sounds
+		this.bonusSound = this.game.add.audio('takeBonus');
+		this.dieSound = this.game.add.audio('enemyDie');
+		this.hitSound = this.game.add.audio('playerHit');
+		
+		// Initialize pause controls
+		this.pauseGame();
+		
+		/* --- Display UI labels --- */
 		this.displayLabels();
 		
 		/* --- Add all sprites/groups --- */
@@ -537,10 +669,17 @@ Play.prototype = {
 		}, this.game, this.game.world.centerX, 450);
 		this.game.add.existing(this.player);
 		
-		// Create default powerups
-		this.powerups = this.game.add.group();
-		this.powerups.enableBody = true;
-		this.createPowerUps(1);
+		// Create default powerups (red, green, blue)
+			this.powerups = new PowerUpGroup(this.game);
+			this.powerups.createPowerUps(1);
+// 		this.powerups = this.game.add.group();
+// 		this.powerups.enableBody = true;
+// 		this.createPowerUps(1);
+				
+		// Create pills (red, green, blue)
+		
+		// Create shields (bronze, gold, silver)
+		
 
 		/* --- Initialise emitters --- */
 
@@ -560,44 +699,24 @@ Play.prototype = {
 
 		// Init emitter for enemy explosions
 		this.explosionEmitter = this.game.add.emitter(0, 0, 50);
-		this.explosionEmitter.makeParticles('pixel');
-		this.explosionEmitter.setYSpeed(-150, 150);
-		this.explosionEmitter.setXSpeed(-150, 150);
+// 		this.explosionEmitter.makeParticles('pixel');
+		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver'], 1, 
+                                   100, false, false);
+		this.explosionEmitter.setYSpeed(-400, 400);
+		this.explosionEmitter.setXSpeed(-400, 400);		
 		this.explosionEmitter.gravity = 0;
-
-		/* --- Initialise variables --- */
-
-		// clicking mouse or pressing enter pauses game
-		this.game.input.onDown.add(this.pauseGame, this);
-		this.pauseKey = this.game.input.keyboard
-			 .addKey(Phaser.Keyboard.ENTER);
-		this.game.paused = false;
-		
-		// starting variables
-		this.lives = this.game.global.lives;
-		this.game.global.score = 0;
-		this._nextLaserTime = 0;
-		this._nextEnemyTime = 0;
-		this._oldEnemyLevel = 1;
-		this._currEnemyLevel = 1;
-		this._colors = ["B", "G", "R"];
 	
-// 		this.bonus = 1;
-		this._oldPowerLevel = 1;
-		this._currPowerLevel = 1;
-		
-		// Add sounds
-		this.bonusSound = this.game.add.audio('takeBonus');
-		this.dieSound = this.game.add.audio('enemyDie');
-		this.hitSound = this.game.add.audio('playerHit');
 
 		// Create new powerup every 8 seconds
-		this.game.physics.setBoundsToWorld();
-		this.game.time.events.loop(8000, this.newPowerUp, this);
+		this.game.physics.setBoundsToWorld();		
+		this.game.time.events.loop(8000, this.genPowerUps, this);
 		
-		// Initialize pause controls
-		this.pauseGame();
+		
 },
+	
+	genPowerUps: function(){
+		this.powerups.newPowerUp(this._oldPowerLevel, this._currPowerLevel);
+	},
 
 	update: function() {
 		if (!this.player.alive) { return; }
@@ -662,64 +781,14 @@ Play.prototype = {
 	generateEnemy: function(enemyLevel) {
 // 		var enemy = this.enemies.getFirstDead();
 		var enemy = this.enemies.getRandom();
-		if (!enemy) { return; } // all enemies still alive
+		if (!enemy) { return; } // return if all enemies still alive
 
 		this.enemies.resetEnemy(enemy);
-	},
-	
-	/* --- RECYCLE POWERUPS --- */
-	
-	// initialize this.powerups with 3 random powerups
-	createPowerUps: function(level) {
-		// empty out powerups
-		this.powerups.removeAll(true);
-	
-		var keysL1 = ['powerupB1', 'powerupG1', 'powerupR1'],
-				keysL2 = ['powerupB2', 'powerupG2', 'powerupR2'],
-				keysL3 = ['powerupB3', 'powerupG3', 'powerupR3'];
-		
-		if (level === 1) {
-			var keys = Phaser.Utils.shuffle(keysL1);
-		} else if (level === 2) {
-			var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2));
-		} else {
-			var keys = Phaser.Utils.shuffle(keysL1.concat(keysL2).concat(keysL3));
-		}
-		
-		for (var i = 0; i < keys.length; i++) {
-			this.powerups.create(0, 0, keys[i], 1, false);
-		}
-		
-		return this.powerups;
-	},
-	
-	// generate next random powerup based on current power level
-	newPowerUp: function() {	
-		if (this._oldPowerLevel !== this._currPowerLevel) {		
-			this.createPowerUps(this._currPowerLevel);		
-		}
-
-		var powerup = this.powerups.getFirstDead();				
-		if (!powerup) { return; }
-		
-		// revive the powerup
-		powerup.anchor.setTo(0.5, 0.5);
-		powerup.reset(this.game.rnd.integerInRange(20, this.game.world.width-40), -powerup.height/2);
-		powerup.body.velocity.y = 150;
-		powerup.body.angularVelocity = 100;
-		
-		// tween for throbbing affect
-		this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
-		
-		powerup.checkWorldBounds = true;	
-		powerup.outOfBoundsKill = true;	
 	},
 	
 	/* --- UTILS --- */
 	
 	getPowerColor: function(key){
-		console.log("getPowerColor", this._colors);
-		
 		for (var i = 0; i < this._colors.length; i++) {
 			if (key.search(this._colors[i]) !== -1) {
 				return this._colors[i];
@@ -728,7 +797,7 @@ Play.prototype = {
 	},
 	
 	checkPowerLevel: function(key){
-		var levels = ["1", "2", "3"];
+		var levels = this._levels;
 		for (var i = 0; i < levels.length; i++) {
 			if (key.search(levels[i]) !== -1) {
 				return levels[i];
@@ -738,10 +807,12 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
+		this.player.y += (enemy.body.velocity.y / 10);
+					
 		if (enemy !== this.boss) {
-			enemy.kill();
+			enemy.kill(); // only kill non-bosses upon collision
 		} 
-		
+					
 		this.hitSound.play();
 
 		// Decrease power level by one, down to floor of 1
@@ -756,7 +827,6 @@ Play.prototype = {
 		// Decrease HP by amount depending on enemy strength
 		this.player.health -= this.enemies.dealDamage(enemy);
 		this.healthLabel.text = 'health: ' + this.player.health;
-		
 		
 		if (this.player.health <= 0) {
 			this.takePlayerLife();
@@ -785,29 +855,31 @@ Play.prototype = {
 	},
 	
 	takePowerUp: function(player, powerup) {
-		// initialize to first taken powerup
+		// current powerup's color
 		var newColor = this.getPowerColor(powerup.key);
-		
-		// if powerup is same color and >= level, go up one power level
-		// if different color, reset power level to one
+			
+		// initialize to first taken powerup if no color yet
 		if (this._currColor === undefined) { // first powerup 
-			console.log("undefined currCol", this._currColor, newColor);
 			this._currColor = newColor;
-			this.swapPowerLevel(0);
+			this.swapPowerLevel(1);
 			this.swapColor(newColor);
+		// if different color, reset power level to one
 		} else if (this._currColor !== newColor) {
 			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
 		} else {		
+		// if powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
 			var newLevel = this.checkPowerLevel(powerup.key);
-			if (newLevel >= this._currPowerLevel)	{
+			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
+		// update whenever you pick up another powerup;
+		this.powerups.updateColorLvl(this._currColor);
 		
 		// Tween the player with sound
 		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
@@ -818,7 +890,6 @@ Play.prototype = {
 	enemyHit: function(enemy, laser) {
 		// Recoil the enemy
 		laser.kill();		
-		
 		enemy.y -= 10;
 
 		// Reduce health based on power level
@@ -844,7 +915,6 @@ Play.prototype = {
 	/*-- UI --- */
 	
 	increaseScore: function(x) {
-		// Inscrease the score by 'x' and update the label
 		this.game.global.score += x;
 		this.scoreLabel.text = 'score: ' + this.game.global.score;
 	},
@@ -865,6 +935,7 @@ Play.prototype = {
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
+	// swap laser whenever you change level or color
 	swapLaser: function() {
 		this.lasers.removeAll();
 		
@@ -881,10 +952,10 @@ Play.prototype = {
 		
     pause_label.events.onInputUp.add(function () {
 			this.game.paused = true;
-			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
+// 			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
+			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'glassMenu')
       this.pauseMenu.anchor.setTo(0.5, 0.5);
 			
-      // label to illustrate which menu item was chosen. 
       this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
       this.choiceLabel.anchor.setTo(0.5, 0.5);
 			
@@ -933,9 +1004,15 @@ Play.prototype = {
 				h = this.game.world.height;
 		
 		// Display lives and health label in the top left
-		this.livesLabel = this.game.add.text(20, 20, 'lives: 3', 
-			{ font: '22px Lato', fill: '#C8F526' });
-		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#ffffff' });
+		this.livesLabel = this.game.add.text(20, 20, 'lives: ', 
+			{ font: '22px Lato', fill: '#fff' });
+		var startX = 90;
+		for (var i = 0; i < this.lives; i++) {
+			var dx = i * 30;
+			var heart = this.game.add.sprite(startX + dx, 20, 'heart');
+			heart.anchor.setTo(0, 0);
+		};		
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
 
 		// Display score label in the top right
 		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
@@ -946,8 +1023,7 @@ Play.prototype = {
 		this.colorLabel.anchor.setTo(1, 0);
 		this.powerLabel = this.game.add.text(w-20, 70, 'power: ', { font: '14px Lato', fill: '#ffffff' });
 		this.powerLabel.anchor.setTo(1, 0);
-		
-
+			
 		// Capture and setup keys
 		this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.UP, Phaser.Keyboard.DOWN, Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR]);
 
@@ -972,7 +1048,7 @@ Play.prototype = {
 };
 
 module.exports = Play;
-},{"../prefabs/enemyGroup":2,"../prefabs/player":3,"../prefabs/scoreboard":4}],10:[function(require,module,exports){
+},{"../prefabs/enemyGroup":2,"../prefabs/player":3,"../prefabs/powerupGroup":4,"../prefabs/scoreboard":5}],11:[function(require,module,exports){
 'use strict';
 function Preload() {
   this.asset = null;
@@ -1015,16 +1091,14 @@ Preload.prototype = {
 		this.load.image('powerupB3', 'assets/powerups/powerupBlue_bolt.png');
 		this.load.image('powerupG3', 'assets/powerups/powerupGreen_bolt.png');
 		this.load.image('powerupR3', 'assets/powerups/powerupRed_bolt.png');
-		
-		// Attack Powerups - star for speed
-		this.load.image('speed1', 'assets/powerups/star_bronze.png');
-		this.load.image('speed2', 'assets/powerups/star_silver.png');
-		this.load.image('speed3', 'assets/powerups/star_gold.png');
-		
-		// Defense powers - shield for health and pills for extra life
+			
+		// Defense Powers - shields for health and pills for additional life
 		this.load.image('shieldBronze', 'assets/powerups/shield_bronze.png');
 		this.load.image('shieldSilver', 'assets/powerups/shield_silver.png');
 		this.load.image('shieldGold', 'assets/powerups/shield_gold.png');
+		this.load.image('pillB', 'assets/powerups/pill_blue.png');
+		this.load.image('pillG', 'assets/powerups/pill_green.png');
+		this.load.image('pillR', 'assets/powerups/pill_red.png');
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
@@ -1038,10 +1112,18 @@ Preload.prototype = {
 		this.load.image('laserR3', 'assets/weapons/laserRed12.png');
 		this.load.image('laserG3', 'assets/weapons/laserGreen06.png');
 		
-		// pause button
-		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
+		// UI
+// 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
+		this.load.image('glassMenu', 'assets/ui/glassPanel_corners_wide.png');
+		this.load.image('starBronze', 'assets/powerups/star_bronze.png');
+		this.load.image('starSilver', 'assets/powerups/star_silver.png');
+		this.load.image('starGold', 'assets/powerups/star_gold.png');
+		this.load.image('gemR', 'assets/items/gemRed.png');
+		this.load.image('gemG', 'assets/items/gemGreen.png');
+		this.load.image('gemB', 'assets/items/gemBlue.png');
+		this.load.image('heart', 'assets/ui/hud_heartFull_small.png')
 
-		// Load all sound effects
+		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);
 		this.load.audio('fireSound', ['assets/bullet.ogg', 'assets/bullet.mp3']);
 		this.load.audio('enemyDie', ['assets/die.ogg', 'assets/die.mp3']);
