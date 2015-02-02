@@ -34,10 +34,9 @@ Play.prototype = {
 		this.dieSound = this.game.add.audio('enemyDie');
 		this.hitSound = this.game.add.audio('playerHit');
 		
-		// Initialize pause controls
-		this.pauseGame();
 		
 		/* --- Display UI labels --- */
+		this.pauseGame();
 		this.displayLabels();
 		
 		/* --- Add all sprites/groups --- */
@@ -58,17 +57,16 @@ Play.prototype = {
 		this.game.add.existing(this.player);
 		
 		// Create default powerups (red, green, blue)
-			this.powerups = new PowerUpGroup(this.game);
-			this.powerups.createPowerUps(1);
-// 		this.powerups = this.game.add.group();
-// 		this.powerups.enableBody = true;
-// 		this.createPowerUps(1);
+		this.powerups = new PowerUpGroup(this.game);
+		this.powerups.createPowerUps(1);
 				
 		// Create pills (red, green, blue)
 		
 		// Create shields (bronze, gold, silver)
 		
-
+		// Create coins
+		
+		
 		/* --- Initialise emitters --- */
 
 		// Add a starfield to the background of the game
@@ -86,20 +84,20 @@ Play.prototype = {
 		startEmitter.start(false, 7000, 100, 0);	
 
 		// Init emitter for enemy explosions
-		this.explosionEmitter = this.game.add.emitter(0, 0, 50);
-// 		this.explosionEmitter.makeParticles('pixel');
-		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver'], 1, 
-                                   100, false, false);
+		this.explosionEmitter = this.game.add.emitter(0, 0, 30);
+		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver', 'starBasic'], 1, 100, false, false);
 		this.explosionEmitter.setYSpeed(-400, 400);
 		this.explosionEmitter.setXSpeed(-400, 400);		
 		this.explosionEmitter.gravity = 0;
-	
+		this.explosionEmitterBoss = this.game.add.emitter(0, 0, 50);
+		this.explosionEmitterBoss.makeParticles('starDiamond');
+		this.explosionEmitterBoss.setYSpeed(-400, 400);
+		this.explosionEmitterBoss.setXSpeed(-400, 400);		
+		this.explosionEmitterBoss.gravity = 0;
 
 		// Create new powerup every 8 seconds
 		this.game.physics.setBoundsToWorld();		
-		this.game.time.events.loop(8000, this.genPowerUps, this);
-		
-		
+		this.game.time.events.loop(4000, this.genPowerUps, this);
 },
 	
 	genPowerUps: function(){
@@ -144,6 +142,7 @@ Play.prototype = {
 			
 			var delay = Math.max(start - (start - end) * this.game.global.score/score, end);
 			
+			// enemies rise levels based on game score
 			if (this.game.global.score <= 10) {
 				var enemyLevel = 1;
 			} else {
@@ -225,7 +224,8 @@ Play.prototype = {
 	takePlayerLife: function(){
 		// Update lives count - game over if 0 lives left
 		this.lives -= 1;
-		this.livesLabel.text = 'lives: ' + this.lives;
+		this.hearts.removeBetween(this.lives, this.lives+1, true, true);
+		
 		this.player.health = this.game.global.health;
 		
 		if (this.lives <= 0) {
@@ -246,29 +246,30 @@ Play.prototype = {
 		// current powerup's color
 		var newColor = this.getPowerColor(powerup.key);
 			
-		// initialize to first taken powerup if no color yet
+		// Initialize to first taken powerup if no color yet
 		if (this._currColor === undefined) { // first powerup 
 			this._currColor = newColor;
 			this.swapPowerLevel(1);
 			this.swapColor(newColor);
-		// if different color, reset power level to one
+			this.powerups.updateColorLvl(this._currColor);
+		// If swapped color, reset power level to one
 		} else if (this._currColor !== newColor) {
 			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
+			this.powerups.updateColorLvl(this._currColor);
 		} else {		
-		// if powerup is same color and greater level, go up one power level
+		// If powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
 			var newLevel = this.checkPowerLevel(powerup.key);
 			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
+			this.powerups.updateColorLvl(this._currColor);
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
-		// update whenever you pick up another powerup;
-		this.powerups.updateColorLvl(this._currColor);
-		
+				
 		// Tween the player with sound
 		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
 			.to({x: 1, y: 1}, 100).start();
@@ -285,17 +286,24 @@ Play.prototype = {
 		
 		// if no more health, kill the enemy
 		if (enemy.health <= 0) {
-			// Emit particles
-			this.explosionEmitter.x = enemy.x;
-			this.explosionEmitter.y = enemy.y;
-			this.explosionEmitter.start(true, 600, null, 15);
+			if (enemy === this.boss) {
+				// Emit diamond particles
+				this.explosionEmitterBoss.x = enemy.x;
+				this.explosionEmitterBoss.y = enemy.y;
+				this.explosionEmitterBoss.start(true, 600, null, 15);
+			} else {
+				// Emit star particles
+				this.explosionEmitter.x = enemy.x;
+				this.explosionEmitter.y = enemy.y;
+				this.explosionEmitter.start(true, 600, null, 15);			
+			}		
 
 			// Kill the enemy with sound
 			enemy.kill();
 			this.dieSound.play();
 
-			// Inscrease score
-			this.increaseScore(5);
+			// Increase score
+			this.increaseScore(10);
 		}
 	},
 
@@ -335,17 +343,13 @@ Play.prototype = {
     var w = this.game.world.width,
 				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-80, h-40, 'PAUSE', { font: '20px Lato', fill: '#ff0080' });
+    var pause_label = this.game.add.text(w-80, 110, 'PAUSE', { font: '20px Lato', fill: '#fff' });
     pause_label.inputEnabled = true;
 		
     pause_label.events.onInputUp.add(function () {
 			this.game.paused = true;
-// 			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
-			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'glassMenu')
-      this.pauseMenu.anchor.setTo(0.5, 0.5);
-			
-      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
-      this.choiceLabel.anchor.setTo(0.5, 0.5);
+			this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
+      this.restartMenu.anchor.setTo(0.5, 0.5);
 			
 			this.game.input.onDown.add(this.unpause, this);
     }.bind(this));
@@ -355,10 +359,9 @@ Play.prototype = {
   unpause: function(event){
 		var w = this.game.width,
 				h = this.game.height,
-				menuWidth = this.pauseMenu.width,
-				menuHeight = this.pauseMenu.height;
+				menuWidth = this.restartMenu.width,
+				menuHeight = this.restartMenu.height;
 		
-		// Only act if paused
 		if (this.game.paused) {
 			// Calculate the corners of the menu
 			var x1 = w/2 - menuWidth/2, x2 = w/2 + menuWidth/2,
@@ -366,23 +369,12 @@ Play.prototype = {
 
 			// Check if the click was inside the menu
 			if (event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ) {
-				var choicemap = ['one', 'two', 'three', 'four', 'five', 'six'];
-				// Get menu local coordinates for the click
-				var x = event.x - x1,
-						y = event.y - y1;
-
-				// Calculate the choice 
-				var choice = Math.floor(x / 90) + 3*Math.floor(y / 90);
-
-				// Display the choice
-				this.choiceLabel.text = 'You chose menu item: ' + choicemap[choice];
-			} else {
 				// Remove the menu and the label
-				this.pauseMenu.destroy();
-				this.choiceLabel.destroy();
+				this.restartMenu.destroy();
 
 				// Unpause the game
 				this.game.paused = false;
+
 			}
 		}
 	},
@@ -392,18 +384,20 @@ Play.prototype = {
 				h = this.game.world.height;
 		
 		// Display lives and health label in the top left
-		this.livesLabel = this.game.add.text(20, 20, 'lives: ', 
-			{ font: '22px Lato', fill: '#fff' });
-		var startX = 90;
+		this.hearts = this.game.add.group();
+		var startX = 17;
 		for (var i = 0; i < this.lives; i++) {
 			var dx = i * 30;
-			var heart = this.game.add.sprite(startX + dx, 20, 'heart');
-			heart.anchor.setTo(0, 0);
+			this.hearts.create(startX + dx, 17, 'heart');			
 		};		
 		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
-
+		
+		// Display scoreboard (glass panel) in the top right
+		this.scoreboard = this.game.add.sprite(w-5, 5, 'scoreboard');
+		this.scoreboard.anchor.setTo(1, 0);
+		
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right

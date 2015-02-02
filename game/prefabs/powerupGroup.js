@@ -13,9 +13,9 @@ var PowerUpGroup = function(game, parent) {
 	this.h = this.game.world.height;
 	this.startX = this.w - 120;
 	this.startY = {
-		'R': this.h - 75,
-		'G': this.h - 50,
-		'B': this.h - 25
+		'R': this.h - 90,
+		'G': this.h - 60,
+		'B': this.h - 30
 	}
 };
 
@@ -71,8 +71,8 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 	powerup.body.velocity.y = 150;
 	powerup.body.angularVelocity = 100;
 
-	// tween for throbbing effect
-	this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+	// tween for effect
+	this.game.add.tween(powerup.scale).to({x: 1.25, y: 1.25}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
 
 	powerup.checkWorldBounds = true;
 	powerup.outOfBoundsKill = true;
@@ -85,15 +85,16 @@ PowerUpGroup.prototype.updateColorLvl = function(color){
 		return;
 	} else if (this.colorLevels[color] === 3) {
 		this.finishColorLvl(color)
+	} else {
+		this.colorLevels[color] += 1
+		this.renderColorLvl(color);
 	}
-	
-	this.colorLevels[color] += 1
-	this.renderColorLvl(color);
+		
 };
 
 PowerUpGroup.prototype.renderColorLvl = function(color){
 	var dx = this.startX + ((this.colorLevels[color] - 1) * 40);
-	var gemSprite = 'gem' + color;
+	var gemSprite = 'gem' + color + this.colorLevels[color];
 	
 	var gem = this.game.add.sprite(dx, this.startY[color], gemSprite);
   gem.anchor.setTo(0.5, 0.5);

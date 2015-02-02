@@ -27,7 +27,9 @@ Preload.prototype = {
 		this.load.image('alienB2', 'assets/enemies/enemyBlue2.png');
 		this.load.image('alienG2', 'assets/enemies/enemyGreen2.png');
 		this.load.image('alienR2', 'assets/enemies/enemyRed2.png');
-		this.load.image('boss1', 'assets/enemies/alienYellow_jump.png');
+		this.load.image('boss1', 'assets/enemies/boss/caffeine_pink_lg.png');
+		this.load.image('boss2', 'assets/enemies/boss/aspirin_aqua.png');
+		this.load.image('boss3', 'assets/enemies/boss/penicillin_yellow.png');
 		
 		// Weapon Powerups - normal, star, bolt
 		this.load.image('bonus', 'assets/bonus.png');
@@ -63,14 +65,30 @@ Preload.prototype = {
 		
 		// UI
 // 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
-		this.load.image('glassMenu', 'assets/ui/glassPanel_corners_wide.png');
-		this.load.image('starBronze', 'assets/powerups/star_bronze.png');
-		this.load.image('starSilver', 'assets/powerups/star_silver.png');
-		this.load.image('starGold', 'assets/powerups/star_gold.png');
-		this.load.image('gemR', 'assets/items/gemRed.png');
-		this.load.image('gemG', 'assets/items/gemGreen.png');
-		this.load.image('gemB', 'assets/items/gemBlue.png');
-		this.load.image('heart', 'assets/ui/hud_heartFull_small.png')
+		this.load.image('restartMenu', 'assets/ui/restart_metal.png');
+		this.load.image('scoreboard', 'assets/ui/glassPanel_100.png');
+// 		this.load.image('pauseBar', 'assets/ui/glassPanel_pause.png');		
+		this.load.image('starBasic', 'assets/misc/star.png');
+		this.load.image('starBronze', 'assets/misc/starBronze_20.png');
+		this.load.image('starSilver', 'assets/misc/starSilver_20.png');
+		this.load.image('starGold', 'assets/misc/starGold_20.png');
+		this.load.image('starDiamond', 'assets/misc/starDiamond.png');
+		this.load.image('heart', 'assets/ui/hud_heartFull_small.png');
+		
+		// ITEMS/ACCESSORIES
+		this.load.image('coin1', 'assets/items/coinBronze.png');
+		this.load.image('coin2', 'assets/items/coinSilver.png');
+		this.load.image('coin3', 'assets/items/coinGold.png');
+		
+		this.load.image('gemR1', 'assets/items/gemRed1.png');
+		this.load.image('gemR2', 'assets/items/gemRed2.png');
+		this.load.image('gemR3', 'assets/items/gemRed3.png');
+		this.load.image('gemG1', 'assets/items/gemGreen1.png');
+		this.load.image('gemG2', 'assets/items/gemGreen2.png');
+		this.load.image('gemG3', 'assets/items/gemGreen3.png');
+		this.load.image('gemB1', 'assets/items/gemBlue1.png');
+		this.load.image('gemB2', 'assets/items/gemBlue2.png');
+		this.load.image('gemB3', 'assets/items/gemBlue3.png');
 
 		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);

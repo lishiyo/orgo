@@ -45,7 +45,7 @@ Player.prototype.move = function(){
 		} else if (right.isDown) {
 			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.y = dir * 250;
+			this.body.velocity.y = dir * 350;
 		}
 	}.bind(this);
 	
@@ -55,7 +55,7 @@ Player.prototype.move = function(){
 		} else if (down.isDown) {
 			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.x = -(dir * 250);
+			this.body.velocity.x = -(dir * 350);
 		}
 	}.bind(this);
 		

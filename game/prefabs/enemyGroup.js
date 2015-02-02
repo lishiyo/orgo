@@ -7,6 +7,7 @@ var EnemyGroup = function(opts, game, parent) {
 	this._currLevel = 1;
 	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
+	
 	// Initialize enemies at level one
 	this.addEnemies(1);
 };
@@ -25,9 +26,11 @@ EnemyGroup.prototype.dealDamage = function(enemy) {
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
+	// if boss for this level already exists, return
 	if (this._bossTally[level]) { return; }
-	// remain level 1 for now
-	var bossKey = 'boss' + 1;
+	
+	// levels 1-3
+	var bossKey = 'boss' + level;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
 	
 	boss.anchor.setTo(0.5, 1);

@@ -26,6 +26,7 @@ var EnemyGroup = function(opts, game, parent) {
 	this._currLevel = 1;
 	this._bossTally= {};
 	this._levels = { 1: "1", 2: "2", 3: "3"};
+	
 	// Initialize enemies at level one
 	this.addEnemies(1);
 };
@@ -44,9 +45,11 @@ EnemyGroup.prototype.dealDamage = function(enemy) {
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
+	// if boss for this level already exists, return
 	if (this._bossTally[level]) { return; }
-	// remain level 1 for now
-	var bossKey = 'boss' + 1;
+	
+	// levels 1-3
+	var bossKey = 'boss' + level;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
 	
 	boss.anchor.setTo(0.5, 1);
@@ -173,7 +176,7 @@ Player.prototype.move = function(){
 		} else if (right.isDown) {
 			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.y = dir * 250;
+			this.body.velocity.y = dir * 350;
 		}
 	}.bind(this);
 	
@@ -183,7 +186,7 @@ Player.prototype.move = function(){
 		} else if (down.isDown) {
 			tweenAngle(this.angle - (dir * 10));
 		} else {
-			this.body.velocity.x = -(dir * 250);
+			this.body.velocity.x = -(dir * 350);
 		}
 	}.bind(this);
 		
@@ -293,9 +296,9 @@ var PowerUpGroup = function(game, parent) {
 	this.h = this.game.world.height;
 	this.startX = this.w - 120;
 	this.startY = {
-		'R': this.h - 75,
-		'G': this.h - 50,
-		'B': this.h - 25
+		'R': this.h - 90,
+		'G': this.h - 60,
+		'B': this.h - 30
 	}
 };
 
@@ -351,8 +354,8 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 	powerup.body.velocity.y = 150;
 	powerup.body.angularVelocity = 100;
 
-	// tween for throbbing effect
-	this.game.add.tween(powerup.scale).to({x: 1.2, y: 1.2}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+	// tween for effect
+	this.game.add.tween(powerup.scale).to({x: 1.25, y: 1.25}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
 
 	powerup.checkWorldBounds = true;
 	powerup.outOfBoundsKill = true;
@@ -365,15 +368,16 @@ PowerUpGroup.prototype.updateColorLvl = function(color){
 		return;
 	} else if (this.colorLevels[color] === 3) {
 		this.finishColorLvl(color)
+	} else {
+		this.colorLevels[color] += 1
+		this.renderColorLvl(color);
 	}
-	
-	this.colorLevels[color] += 1
-	this.renderColorLvl(color);
+		
 };
 
 PowerUpGroup.prototype.renderColorLvl = function(color){
 	var dx = this.startX + ((this.colorLevels[color] - 1) * 40);
-	var gemSprite = 'gem' + color;
+	var gemSprite = 'gem' + color + this.colorLevels[color];
 	
 	var gem = this.game.add.sprite(dx, this.startY[color], gemSprite);
   gem.anchor.setTo(0.5, 0.5);
@@ -646,10 +650,9 @@ Play.prototype = {
 		this.dieSound = this.game.add.audio('enemyDie');
 		this.hitSound = this.game.add.audio('playerHit');
 		
-		// Initialize pause controls
-		this.pauseGame();
 		
 		/* --- Display UI labels --- */
+		this.pauseGame();
 		this.displayLabels();
 		
 		/* --- Add all sprites/groups --- */
@@ -670,17 +673,16 @@ Play.prototype = {
 		this.game.add.existing(this.player);
 		
 		// Create default powerups (red, green, blue)
-			this.powerups = new PowerUpGroup(this.game);
-			this.powerups.createPowerUps(1);
-// 		this.powerups = this.game.add.group();
-// 		this.powerups.enableBody = true;
-// 		this.createPowerUps(1);
+		this.powerups = new PowerUpGroup(this.game);
+		this.powerups.createPowerUps(1);
 				
 		// Create pills (red, green, blue)
 		
 		// Create shields (bronze, gold, silver)
 		
-
+		// Create coins
+		
+		
 		/* --- Initialise emitters --- */
 
 		// Add a starfield to the background of the game
@@ -698,20 +700,20 @@ Play.prototype = {
 		startEmitter.start(false, 7000, 100, 0);	
 
 		// Init emitter for enemy explosions
-		this.explosionEmitter = this.game.add.emitter(0, 0, 50);
-// 		this.explosionEmitter.makeParticles('pixel');
-		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver'], 1, 
-                                   100, false, false);
+		this.explosionEmitter = this.game.add.emitter(0, 0, 30);
+		this.explosionEmitter.makeParticles(['starGold', 'starBronze', 'starSilver', 'starBasic'], 1, 100, false, false);
 		this.explosionEmitter.setYSpeed(-400, 400);
 		this.explosionEmitter.setXSpeed(-400, 400);		
 		this.explosionEmitter.gravity = 0;
-	
+		this.explosionEmitterBoss = this.game.add.emitter(0, 0, 50);
+		this.explosionEmitterBoss.makeParticles('starDiamond');
+		this.explosionEmitterBoss.setYSpeed(-400, 400);
+		this.explosionEmitterBoss.setXSpeed(-400, 400);		
+		this.explosionEmitterBoss.gravity = 0;
 
 		// Create new powerup every 8 seconds
 		this.game.physics.setBoundsToWorld();		
-		this.game.time.events.loop(8000, this.genPowerUps, this);
-		
-		
+		this.game.time.events.loop(4000, this.genPowerUps, this);
 },
 	
 	genPowerUps: function(){
@@ -756,6 +758,7 @@ Play.prototype = {
 			
 			var delay = Math.max(start - (start - end) * this.game.global.score/score, end);
 			
+			// enemies rise levels based on game score
 			if (this.game.global.score <= 10) {
 				var enemyLevel = 1;
 			} else {
@@ -837,7 +840,8 @@ Play.prototype = {
 	takePlayerLife: function(){
 		// Update lives count - game over if 0 lives left
 		this.lives -= 1;
-		this.livesLabel.text = 'lives: ' + this.lives;
+		this.hearts.removeBetween(this.lives, this.lives+1, true, true);
+		
 		this.player.health = this.game.global.health;
 		
 		if (this.lives <= 0) {
@@ -858,29 +862,30 @@ Play.prototype = {
 		// current powerup's color
 		var newColor = this.getPowerColor(powerup.key);
 			
-		// initialize to first taken powerup if no color yet
+		// Initialize to first taken powerup if no color yet
 		if (this._currColor === undefined) { // first powerup 
 			this._currColor = newColor;
 			this.swapPowerLevel(1);
 			this.swapColor(newColor);
-		// if different color, reset power level to one
+			this.powerups.updateColorLvl(this._currColor);
+		// If swapped color, reset power level to one
 		} else if (this._currColor !== newColor) {
 			this.swapPowerLevel(-(this._currPowerLevel-1));
 			this.swapColor(newColor);
+			this.powerups.updateColorLvl(this._currColor);
 		} else {		
-		// if powerup is same color and greater level, go up one power level
+		// If powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
 			var newLevel = this.checkPowerLevel(powerup.key);
 			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
+			this.powerups.updateColorLvl(this._currColor);
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
-		// update whenever you pick up another powerup;
-		this.powerups.updateColorLvl(this._currColor);
-		
+				
 		// Tween the player with sound
 		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
 			.to({x: 1, y: 1}, 100).start();
@@ -897,17 +902,24 @@ Play.prototype = {
 		
 		// if no more health, kill the enemy
 		if (enemy.health <= 0) {
-			// Emit particles
-			this.explosionEmitter.x = enemy.x;
-			this.explosionEmitter.y = enemy.y;
-			this.explosionEmitter.start(true, 600, null, 15);
+			if (enemy === this.boss) {
+				// Emit diamond particles
+				this.explosionEmitterBoss.x = enemy.x;
+				this.explosionEmitterBoss.y = enemy.y;
+				this.explosionEmitterBoss.start(true, 600, null, 15);
+			} else {
+				// Emit star particles
+				this.explosionEmitter.x = enemy.x;
+				this.explosionEmitter.y = enemy.y;
+				this.explosionEmitter.start(true, 600, null, 15);			
+			}		
 
 			// Kill the enemy with sound
 			enemy.kill();
 			this.dieSound.play();
 
-			// Inscrease score
-			this.increaseScore(5);
+			// Increase score
+			this.increaseScore(10);
 		}
 	},
 
@@ -947,17 +959,13 @@ Play.prototype = {
     var w = this.game.world.width,
 				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-80, h-40, 'PAUSE', { font: '20px Lato', fill: '#ff0080' });
+    var pause_label = this.game.add.text(w-80, 110, 'PAUSE', { font: '20px Lato', fill: '#fff' });
     pause_label.inputEnabled = true;
 		
     pause_label.events.onInputUp.add(function () {
 			this.game.paused = true;
-// 			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'pauseMenu');
-			this.pauseMenu = this.game.add.sprite(w/2, h/2, 'glassMenu')
-      this.pauseMenu.anchor.setTo(0.5, 0.5);
-			
-      this.choiceLabel = this.game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '16px Lato', fill: '#fff' });
-      this.choiceLabel.anchor.setTo(0.5, 0.5);
+			this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
+      this.restartMenu.anchor.setTo(0.5, 0.5);
 			
 			this.game.input.onDown.add(this.unpause, this);
     }.bind(this));
@@ -967,10 +975,9 @@ Play.prototype = {
   unpause: function(event){
 		var w = this.game.width,
 				h = this.game.height,
-				menuWidth = this.pauseMenu.width,
-				menuHeight = this.pauseMenu.height;
+				menuWidth = this.restartMenu.width,
+				menuHeight = this.restartMenu.height;
 		
-		// Only act if paused
 		if (this.game.paused) {
 			// Calculate the corners of the menu
 			var x1 = w/2 - menuWidth/2, x2 = w/2 + menuWidth/2,
@@ -978,23 +985,12 @@ Play.prototype = {
 
 			// Check if the click was inside the menu
 			if (event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ) {
-				var choicemap = ['one', 'two', 'three', 'four', 'five', 'six'];
-				// Get menu local coordinates for the click
-				var x = event.x - x1,
-						y = event.y - y1;
-
-				// Calculate the choice 
-				var choice = Math.floor(x / 90) + 3*Math.floor(y / 90);
-
-				// Display the choice
-				this.choiceLabel.text = 'You chose menu item: ' + choicemap[choice];
-			} else {
 				// Remove the menu and the label
-				this.pauseMenu.destroy();
-				this.choiceLabel.destroy();
+				this.restartMenu.destroy();
 
 				// Unpause the game
 				this.game.paused = false;
+
 			}
 		}
 	},
@@ -1004,18 +1000,20 @@ Play.prototype = {
 				h = this.game.world.height;
 		
 		// Display lives and health label in the top left
-		this.livesLabel = this.game.add.text(20, 20, 'lives: ', 
-			{ font: '22px Lato', fill: '#fff' });
-		var startX = 90;
+		this.hearts = this.game.add.group();
+		var startX = 17;
 		for (var i = 0; i < this.lives; i++) {
 			var dx = i * 30;
-			var heart = this.game.add.sprite(startX + dx, 20, 'heart');
-			heart.anchor.setTo(0, 0);
+			this.hearts.create(startX + dx, 17, 'heart');			
 		};		
 		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
-
+		
+		// Display scoreboard (glass panel) in the top right
+		this.scoreboard = this.game.add.sprite(w-5, 5, 'scoreboard');
+		this.scoreboard.anchor.setTo(1, 0);
+		
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '22px Lato', fill: '#FCDC3B' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
@@ -1078,7 +1076,9 @@ Preload.prototype = {
 		this.load.image('alienB2', 'assets/enemies/enemyBlue2.png');
 		this.load.image('alienG2', 'assets/enemies/enemyGreen2.png');
 		this.load.image('alienR2', 'assets/enemies/enemyRed2.png');
-		this.load.image('boss1', 'assets/enemies/alienYellow_jump.png');
+		this.load.image('boss1', 'assets/enemies/boss/caffeine_pink_lg.png');
+		this.load.image('boss2', 'assets/enemies/boss/aspirin_aqua.png');
+		this.load.image('boss3', 'assets/enemies/boss/penicillin_yellow.png');
 		
 		// Weapon Powerups - normal, star, bolt
 		this.load.image('bonus', 'assets/bonus.png');
@@ -1114,14 +1114,30 @@ Preload.prototype = {
 		
 		// UI
 // 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
-		this.load.image('glassMenu', 'assets/ui/glassPanel_corners_wide.png');
-		this.load.image('starBronze', 'assets/powerups/star_bronze.png');
-		this.load.image('starSilver', 'assets/powerups/star_silver.png');
-		this.load.image('starGold', 'assets/powerups/star_gold.png');
-		this.load.image('gemR', 'assets/items/gemRed.png');
-		this.load.image('gemG', 'assets/items/gemGreen.png');
-		this.load.image('gemB', 'assets/items/gemBlue.png');
-		this.load.image('heart', 'assets/ui/hud_heartFull_small.png')
+		this.load.image('restartMenu', 'assets/ui/restart_metal.png');
+		this.load.image('scoreboard', 'assets/ui/glassPanel_100.png');
+// 		this.load.image('pauseBar', 'assets/ui/glassPanel_pause.png');		
+		this.load.image('starBasic', 'assets/misc/star.png');
+		this.load.image('starBronze', 'assets/misc/starBronze_20.png');
+		this.load.image('starSilver', 'assets/misc/starSilver_20.png');
+		this.load.image('starGold', 'assets/misc/starGold_20.png');
+		this.load.image('starDiamond', 'assets/misc/starDiamond.png');
+		this.load.image('heart', 'assets/ui/hud_heartFull_small.png');
+		
+		// ITEMS/ACCESSORIES
+		this.load.image('coin1', 'assets/items/coinBronze.png');
+		this.load.image('coin2', 'assets/items/coinSilver.png');
+		this.load.image('coin3', 'assets/items/coinGold.png');
+		
+		this.load.image('gemR1', 'assets/items/gemRed1.png');
+		this.load.image('gemR2', 'assets/items/gemRed2.png');
+		this.load.image('gemR3', 'assets/items/gemRed3.png');
+		this.load.image('gemG1', 'assets/items/gemGreen1.png');
+		this.load.image('gemG2', 'assets/items/gemGreen2.png');
+		this.load.image('gemG3', 'assets/items/gemGreen3.png');
+		this.load.image('gemB1', 'assets/items/gemBlue1.png');
+		this.load.image('gemB2', 'assets/items/gemBlue2.png');
+		this.load.image('gemB3', 'assets/items/gemBlue3.png');
 
 		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);
