@@ -114,7 +114,7 @@ Play.prototype = {
 		this.game.time.events.loop(18000, this.genShield, this);
 		this.game.time.events.loop(26000, this.genCoin, this);
 		
-		// Create boss every 2 min
+		// Create boss every 120 sec
 		this.game.time.events.loop(120000, this.maybeGenBoss, this);
 },
 	
@@ -141,8 +141,12 @@ Play.prototype = {
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
 		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);		
+		this.game.physics.arcade.collide(this.boss, this.enemies);	
+		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
-		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.collide(this.boss, this.lasers, this.enemyHit, null, this);
+		
+		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
 		this.game.physics.arcade.overlap(this.player, this.pills, this.takePill, null, this);
 		this.game.physics.arcade.overlap(this.player, this.shields, this.takeShield, null, this);
 		this.game.physics.arcade.overlap(this.player, this.coins, this.takeCoin, null, this);
@@ -352,6 +356,7 @@ Play.prototype = {
 				this.explosionEmitterBoss.x = enemy.x;
 				this.explosionEmitterBoss.y = enemy.y;
 				this.explosionEmitterBoss.start(true, 600, null, 15);
+				console.log("boss hit!", enemy.health);
 			} else {
 				// Emit star particles
 				this.explosionEmitter.x = enemy.x;
@@ -389,10 +394,9 @@ Play.prototype = {
 		this._currPowerLevel += dx;
 		this.swapLaser();
 		this.player.boostHealth(this._currPowerLevel);
-		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
-		var gem = this.powerups.updateColorLvl(this._currColor);
-		if (gem === "finished") {
+		var maybeWon = this.powerups.updateColorLvl(this._currColor);
+		if (maybeWon) {
 			this.deathHandler(true);
 		}
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;

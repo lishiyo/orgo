@@ -73,7 +73,7 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	enemy.reset(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0);
 
 	// Give a random velocity based on level between 100-500
-	var startVel = Math.max(150, level * 50),
+	var startVel = Math.max(200, level * 50),
 			endVel = Math.min(level * 200, 450);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		

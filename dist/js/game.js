@@ -92,7 +92,7 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	enemy.reset(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0);
 
 	// Give a random velocity based on level between 100-500
-	var startVel = Math.max(150, level * 50),
+	var startVel = Math.max(200, level * 50),
 			endVel = Math.min(level * 200, 450);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		
@@ -498,7 +498,7 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 		this.createPowerUps(currLevel+1);	// refresh powerups array
 	}
 
-	var powerup = this.getFirstDead();				
+	var powerup = this.getRandom();				
 	if (!powerup) { return; }
 
 	// revive the powerup
@@ -518,12 +518,13 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 
 PowerUpGroup.prototype.updateColorLvl = function(color){
 	if (this.colorLevels[color] > 3) {
-		return;
+		return false;
 	} else if (this.colorLevels[color] === 3) {
-		this.finishColorLvl(color)
+		this.finishColorLvl(color);
 	} else {
 		this.colorLevels[color] += 1
 		this.renderColorLvl(color);
+		return false;
 	}	
 };
 
@@ -536,9 +537,10 @@ PowerUpGroup.prototype.renderColorLvl = function(color){
 };
 
 PowerUpGroup.prototype.finishColorLvl = function(color){
-	console.log("finished");
-	if (this.colorLevels['R'] === 3 && this.colorsLevels['B'] === 3 && this.colorLevels['G'] === 3) {
-		return "finished";
+	if (this.colorLevels['R'] === 3 && this.colorLevels['B'] === 3 && this.colorLevels['G'] === 3) {
+		return true;
+	} else {
+		return false;
 	}
 };
 
@@ -886,7 +888,7 @@ Play.prototype = {
 		this.game.time.events.loop(26000, this.genCoin, this);
 		
 		// Create boss every 2 min
-		this.game.time.events.loop(120000, this.maybeGenBoss, this);
+		this.game.time.events.loop(2000, this.maybeGenBoss, this);
 },
 	
 	/** --- EVENT LOOPS --- **/
@@ -912,8 +914,12 @@ Play.prototype = {
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
 		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);		
+		this.game.physics.arcade.collide(this.boss, this.enemies);	
+		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
-		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.collide(this.boss, this.lasers, this.enemyHit, null, this);
+		
+		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
 		this.game.physics.arcade.overlap(this.player, this.pills, this.takePill, null, this);
 		this.game.physics.arcade.overlap(this.player, this.shields, this.takeShield, null, this);
 		this.game.physics.arcade.overlap(this.player, this.coins, this.takeCoin, null, this);
@@ -1123,6 +1129,7 @@ Play.prototype = {
 				this.explosionEmitterBoss.x = enemy.x;
 				this.explosionEmitterBoss.y = enemy.y;
 				this.explosionEmitterBoss.start(true, 600, null, 15);
+				console.log("boss hit!", enemy.health);
 			} else {
 				// Emit star particles
 				this.explosionEmitter.x = enemy.x;
@@ -1160,10 +1167,9 @@ Play.prototype = {
 		this._currPowerLevel += dx;
 		this.swapLaser();
 		this.player.boostHealth(this._currPowerLevel);
-		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
-		var gem = this.powerups.updateColorLvl(this._currColor);
-		if (gem === "finished") {
+		var maybeWon = this.powerups.updateColorLvl(this._currColor);
+		if (maybeWon) {
 			this.deathHandler(true);
 		}
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;

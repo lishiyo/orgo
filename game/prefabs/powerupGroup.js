@@ -55,7 +55,7 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 		this.createPowerUps(currLevel+1);	// refresh powerups array
 	}
 
-	var powerup = this.getFirstDead();				
+	var powerup = this.getRandom();				
 	if (!powerup) { return; }
 
 	// revive the powerup
@@ -75,12 +75,13 @@ PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {
 
 PowerUpGroup.prototype.updateColorLvl = function(color){
 	if (this.colorLevels[color] > 3) {
-		return;
+		return false;
 	} else if (this.colorLevels[color] === 3) {
-		this.finishColorLvl(color)
+		this.finishColorLvl(color);
 	} else {
 		this.colorLevels[color] += 1
 		this.renderColorLvl(color);
+		return false;
 	}	
 };
 
@@ -93,9 +94,10 @@ PowerUpGroup.prototype.renderColorLvl = function(color){
 };
 
 PowerUpGroup.prototype.finishColorLvl = function(color){
-	console.log("finished");
-	if (this.colorLevels['R'] === 3 && this.colorsLevels['B'] === 3 && this.colorLevels['G'] === 3) {
-		return "finished";
+	if (this.colorLevels['R'] === 3 && this.colorLevels['B'] === 3 && this.colorLevels['G'] === 3) {
+		return true;
+	} else {
+		return false;
 	}
 };
 
