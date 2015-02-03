@@ -5,8 +5,7 @@ var EnemyGroup = function(opts, game, parent) {
 	this.game = game;
 	this.enableBody = true;	
 	this._currLevel = 1;
-	this._bossTally= {};
-	this._levels = { 1: "1", 2: "2", 3: "3"};
+	this._levels = ["1", "2", "3"];
 	
 	// Initialize enemies at level one
 	this.addEnemies(1);
@@ -22,13 +21,11 @@ EnemyGroup.prototype.update = function() {
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
 	var level = this.getEnemyLevel(enemy.key);	
+	console.log("deal damage", level, this.game.global.enemyAttack[level]);
 	return this.game.global.enemyAttack[level];
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
-	// if boss for this level already exists, return
-	if (this._bossTally[level]) { return; }
-	
 	// levels 1-3
 	var bossKey = 'boss' + level;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
@@ -48,9 +45,6 @@ EnemyGroup.prototype.genBoss = function(level) {
 	boss.health = level * 500;
 	boss.body.collideWorldBounds = true;
 	boss.body.bounce.set(1);
-	
-	// only create one boss per level
-	this._bossTally[level] = true;
 	
 	return boss;
 };
@@ -83,10 +77,6 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 			endVel = Math.min(level * 200, 500);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		
-	// for spritesheets
-// 	enemy.animations.add('attack', [0, 1], 4, true);
-// 	enemy.animations.play('attack');
-
 	// enemy health depends on its own level
 	enemy.health = this.game.global.enemyHealth[level];
 
@@ -97,11 +87,10 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	return enemy;
 }
 
-
 EnemyGroup.prototype.getEnemyLevel = function(key) {
-	for (var i = 1; i <= 3; i++) {
+	for (var i = 0; i < this._levels.length; i++) {
 		if (key.search(this._levels[i]) !== -1) {
-			var level = i;
+			var level = i+1;
 			break;
 		}
 	}

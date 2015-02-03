@@ -22,16 +22,10 @@ var PowerUpGroup = function(game, parent) {
 PowerUpGroup.prototype = Object.create(Phaser.Group.prototype);
 PowerUpGroup.prototype.constructor = PowerUpGroup;
 
-PowerUpGroup.prototype.update = function() {
-  
-};
-
 /* --- RECYCLE POWERUPS --- */
 	
 	// initialize this.powerups with 3 random powerups
-PowerUpGroup.prototype.createPowerUps = function(level) {
-	console.log("refab createPowerUps with level:", level);
-	
+PowerUpGroup.prototype.createPowerUps = function(level) {	
 	// empty out powerups
 	this.removeAll(true);
 
@@ -51,15 +45,14 @@ PowerUpGroup.prototype.createPowerUps = function(level) {
 		this.create(0, 0, keys[i], 1, false);
 	}
 
+	console.log('create powerups for level', level, this);
 	return this;
 };
 	
 	// generate next random powerup based on current power level
-PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {	
-	console.log("refab newPowerUp", oldLevel, currLevel);
-	
+PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {		
 	if (oldLevel !== currLevel) {		
-		this.createPowerUps(currLevel);	// refresh powerups array
+		this.createPowerUps(currLevel+1);	// refresh powerups array
 	}
 
 	var powerup = this.getFirstDead();				
@@ -88,8 +81,7 @@ PowerUpGroup.prototype.updateColorLvl = function(color){
 	} else {
 		this.colorLevels[color] += 1
 		this.renderColorLvl(color);
-	}
-		
+	}	
 };
 
 PowerUpGroup.prototype.renderColorLvl = function(color){

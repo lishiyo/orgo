@@ -7,7 +7,7 @@ Menu.prototype = {
   },
   create: function() { 
 		// tween
-		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the microbes', { font: '50px Lato', fill: '#fff' });
+		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the molecules', { font: '50px Lato', fill: '#fff' });
 		nameLabel.anchor.setTo(0.5, 0.5);
 		nameLabel.scale.setTo(0, 0);
 		this.game.add
@@ -15,10 +15,10 @@ Menu.prototype = {
 			.easing(Phaser.Easing.Bounce.Out).start();
 
 		// display score if any
-// 		if (this.game.global.score > 0) {
-// 			var scoreLabel = this.game.add.text(this.game.world.centerX, this.game.world.centerY, 'score: ' + this.game.global.score, { font: '25px Arial', fill: '#ffffff' });
-// 			scoreLabel.anchor.setTo(0.5, 0.5);				
-// 		}
+		if (this.game.global.score > 0) {
+			var scoreLabel = this.game.add.text(this.game.world.centerX, this.game.world.centerY, 'score: ' + this.game.global.score, { font: '25px Lato', fill: '#ffffff' });
+			scoreLabel.anchor.setTo(0.5, 0.5);				
+		}
 
 		// instructions
 		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press the spacebar to start and fire! Use arrow keys for movement and rotation.", { font: '25px Lato', fill: '#f9f9f9' });

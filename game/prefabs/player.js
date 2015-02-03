@@ -3,6 +3,7 @@
 var Player = function(opts, game, x, y, frame) {
 	// super call to Phaser.Sprite
   Phaser.Sprite.call(this, game, x, y, 'player', frame);
+	this.game = game;
 	
   this.anchor.setTo(0.5, 0.5);
 	this.game.physics.arcade.enable(this);
@@ -125,27 +126,40 @@ Player.prototype.fireLaser = function(x, color) {
 		return;
 	}
 
-	// Set the collision area of the laser
-	laser.body.setSize(laser.width, laser.height-2, 0, 0);
-
 	// Initialize the laser
 	laser.anchor.setTo(0.5, 1);
 	laser.reset(x, this.y - this.height/2);
 
+	// Set laser's collision area
+	laser.body.setSize(laser.width, laser.height - 2, 0, 0);
+	
 	// Laser follows angle and velocity of player
 	laser.angle = this.angle;
 	var rad = Phaser.Math.degToRad(this.angle);
 	var dx = 300 * Math.sin(rad),
-			dy = -300 * Math.cos(rad);
-		
+			dy = -300 * Math.cos(rad);		
 	laser.body.velocity.x = dx;
-	laser.body.velocity.y = dy;
-	
+	laser.body.velocity.y = dy;	
 	
 	// Kill the laser when out of the world
 	laser.checkWorldBounds = true;	
 	laser.outOfBoundsKill = true;
 };
 
+// raise HP based on either level of shieldBoost
+Player.prototype.boostHealth = function(level, shieldBoost) {
+	if (typeof shieldBoost === "undefined") {
+		var increase = Math.max(this.game.global.health * (level - 1) * 0.5, 0);
+		this.health = this.game.global.health + increase;
+		console.log("no shieldboost", level, this.health);		
+	} else {		
+		this.game.global.health += shieldBoost;		
+		var increase = Math.max(this.game.global.health * (level - 1) * 0.5, 0);
+		this.health = this.game.global.health + increase;
+		console.log("shieldboost", shieldBoost, this.health);
+	}
+	
+	return this.health;
+};
 
 module.exports = Player;

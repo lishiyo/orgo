@@ -4,6 +4,9 @@ var Scoreboard = require('../prefabs/scoreboard');
 var Player = require('../prefabs/player');
 var EnemyGroup = require('../prefabs/enemyGroup');
 var PowerUpGroup = require('../prefabs/powerupGroup');
+var PillsGroup = require('../prefabs/itemGroup').pills;
+var ShieldGroup = require('../prefabs/itemGroup').shields;
+var CoinGroup = require('../prefabs/itemGroup').coins;
 
 function Play() {};
 
@@ -33,8 +36,7 @@ Play.prototype = {
 		this.bonusSound = this.game.add.audio('takeBonus');
 		this.dieSound = this.game.add.audio('enemyDie');
 		this.hitSound = this.game.add.audio('playerHit');
-		
-		
+			
 		/* --- Display UI labels --- */
 		this.pauseGame();
 		this.displayLabels();
@@ -61,11 +63,16 @@ Play.prototype = {
 		this.powerups.createPowerUps(1);
 				
 		// Create pills (red, green, blue)
+		this.pills = new PillsGroup(this.game);
+		this.pills.createPills();
 		
 		// Create shields (bronze, gold, silver)
+		this.shields = new ShieldGroup(this.game);
+		this.shields.createShields();
 		
 		// Create coins
-		
+		this.coins = new CoinGroup(this.game);
+		this.coins.createCoins();
 		
 		/* --- Initialise emitters --- */
 
@@ -95,13 +102,37 @@ Play.prototype = {
 		this.explosionEmitterBoss.setXSpeed(-400, 400);		
 		this.explosionEmitterBoss.gravity = 0;
 
-		// Create new powerup every 8 seconds
 		this.game.physics.setBoundsToWorld();		
+		
+		// Create new powerup every 10 seconds
 		this.game.time.events.loop(4000, this.genPowerUps, this);
+		
+		// Create new pill every 16 seconds
+		this.game.time.events.loop(2000, this.genPill, this);
+		
+		// Create new shield or coin every 22 seconds
+		this.game.time.events.loop(2000, this.genShield, this);
+		this.game.time.events.loop(2000, this.genCoin, this);
+		
+		// Create boss every 30 seconds
+		this.game.time.events.loop(4000, this.maybeGenBoss, this);
 },
 	
+	/** --- EVENT LOOPS --- **/
 	genPowerUps: function(){
 		this.powerups.newPowerUp(this._oldPowerLevel, this._currPowerLevel);
+	},
+	
+	genPill: function(){
+		this.pills.newPill();
+	},
+	
+	genShield: function(){
+		this.shields.newShield();
+	},
+	
+	genCoin: function(){
+		this.coins.newCoin();
 	},
 
 	update: function() {
@@ -109,12 +140,12 @@ Play.prototype = {
 
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
-		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);
-		
+		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
-		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);
-		
-		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.overlap(this.player, this.pills, this.takePill, null, this);
+		this.game.physics.arcade.overlap(this.player, this.shields, this.takeShield, null, this);
+		this.game.physics.arcade.overlap(this.player, this.coins, this.takeCoin, null, this);
 
 		// Player movement
 		this.player.move();
@@ -145,17 +176,17 @@ Play.prototype = {
 			// enemies rise levels based on game score
 			if (this.game.global.score <= 10) {
 				var enemyLevel = 1;
-			} else {
+			} else if (this.game.global.score <= 20) {
 				var enemyLevel = 2;
+			} else {
+				var enemyLevel = 3;
 			}
 			
 			// add more enemies if you rose up a level
 			if (enemyLevel !== this._currEnemyLevel){
 				this._oldEnemyLevel = this._currEnemyLevel;
-				this._currEnemyLevel = enemyLevel;
-				
+				this._currEnemyLevel = enemyLevel;				
 				this.enemies.addEnemies(enemyLevel);
-				this.boss = this.enemies.genBoss(enemyLevel);
 			}
 			
 			// instantiate a new enemy
@@ -164,6 +195,19 @@ Play.prototype = {
 		}
 	},
 	
+	// only one boss at a time
+	maybeGenBoss: function(){		
+		if (typeof this.boss === "undefined") {
+			this.boss = this.enemies.genBoss(1);
+		}
+		
+		if (this.boss.alive) {
+			return;
+		} else {
+			var bossLevel = this._currEnemyLevel - 1;
+			this.boss = this.enemies.genBoss(bossLevel);
+		}		
+	},
 	
 	generateEnemy: function(enemyLevel) {
 // 		var enemy = this.enemies.getFirstDead();
@@ -194,6 +238,7 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
+		// recoil player
 		this.player.y += (enemy.body.velocity.y / 10);
 					
 		if (enemy !== this.boss) {
@@ -225,8 +270,9 @@ Play.prototype = {
 		// Update lives count - game over if 0 lives left
 		this.lives -= 1;
 		this.hearts.removeBetween(this.lives, this.lives+1, true, true);
-		
-		this.player.health = this.game.global.health;
+		// restore player health to starting HP
+		this.player.boostHealth(this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
 		
 		if (this.lives <= 0) {
 			// Kill the player
@@ -238,7 +284,7 @@ Play.prototype = {
 			this.explosionEmitter.start(true, 800, null, 30);
 
 			// Go to the menu in 1 second
-			this.game.time.events.add(1000, this.startMenu, this);
+			this.game.time.events.add(1000, this.deathHandler, this);
 		} 
 	},
 	
@@ -247,16 +293,14 @@ Play.prototype = {
 		var newColor = this.getPowerColor(powerup.key);
 			
 		// Initialize to first taken powerup if no color yet
-		if (this._currColor === undefined) { // first powerup 
-			this._currColor = newColor;
+		if (this._currColor === undefined) { 
+			this._currColor = newColor;			
+			this.swapColor(newColor);
 			this.swapPowerLevel(1);
-			this.swapColor(newColor);
-			this.powerups.updateColorLvl(this._currColor);
 		// If swapped color, reset power level to one
-		} else if (this._currColor !== newColor) {
-			this.swapPowerLevel(-(this._currPowerLevel-1));
+		} else if (this._currColor !== newColor) {			
 			this.swapColor(newColor);
-			this.powerups.updateColorLvl(this._currColor);
+			this.swapPowerLevel(-(this._currPowerLevel-1));
 		} else {		
 		// If powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
@@ -264,16 +308,33 @@ Play.prototype = {
 			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
-			this.powerups.updateColorLvl(this._currColor);
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
 				
-		// Tween the player with sound
-		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
-			.to({x: 1, y: 1}, 100).start();
-		this.bonusSound.play();
+		this.soundPickup();
+	},
+	
+	takePill: function(player, pill) {
+		this.pills.takePill(player, pill, this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
+		
+		this.soundPickup();
+	},
+	
+	takeShield: function(player, pill) {
+		this.shields.takeShield(player, pill, this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
+		
+		this.soundPickup();
+	},
+	
+	takeCoin: function(player, coin) {
+		this.coins.takeCoin(player, coin);
+		this.scoreLabel.text = 'score: ' + this.game.global.score;
+		
+		this.soundPickup();
 	},
 
 	enemyHit: function(enemy, laser) {
@@ -327,7 +388,10 @@ Play.prototype = {
 		this._oldPowerLevel = this._currPowerLevel;
 		this._currPowerLevel += dx;
 		this.swapLaser();
+		this.player.boostHealth(this._currPowerLevel);
+		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
+		this.powerups.updateColorLvl(this._currColor);
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
@@ -339,21 +403,29 @@ Play.prototype = {
 		this.lasers.createMultiple(50, laserKey);
 	},
 	
+	soundPickup: function(){
+		// Tween the player with sound
+		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
+			.to({x: 1, y: 1}, 100).start();
+		this.bonusSound.play();
+	},
+	
 	pauseGame: function(){
     var w = this.game.world.width,
 				h = this.game.world.height;
+		// add pause button with a callback
+		this.pauseButton = this.game.add.button(w-10, 110, 'pauseButton', this.clickPause, this);
+		this.pauseButton.anchor.setTo(1, 0);
+	},
+	
+	clickPause: function(){
+		var w = this.game.world.width,
+				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-80, 110, 'PAUSE', { font: '20px Lato', fill: '#fff' });
-    pause_label.inputEnabled = true;
-		
-    pause_label.events.onInputUp.add(function () {
-			this.game.paused = true;
-			this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
-      this.restartMenu.anchor.setTo(0.5, 0.5);
-			
-			this.game.input.onDown.add(this.unpause, this);
-    }.bind(this));
-
+		this.game.paused = true;
+		this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
+		this.restartMenu.anchor.setTo(0.5, 0.5);
+		this.game.input.onDown.add(this.unpause, this);
 	},
 	
   unpause: function(event){
@@ -390,14 +462,14 @@ Play.prototype = {
 			var dx = i * 30;
 			this.hearts.create(startX + dx, 17, 'heart');			
 		};		
-		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526', fontWeight: 'bold' });
 		
 		// Display scoreboard (glass panel) in the top right
-		this.scoreboard = this.game.add.sprite(w-5, 5, 'scoreboard');
+		this.scoreboard = this.game.add.sprite(w-10, 10, 'scoreboard');
 		this.scoreboard.anchor.setTo(1, 0);
 		
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B', fontWeight: 'bold' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
@@ -426,6 +498,28 @@ Play.prototype = {
 	startMenu: function() {
 		this.game.state.start('menu');
 	},
+	
+	deathHandler: function(){
+		this.endscore = new Scoreboard(this.game);
+		this.game.add.existing(this.endscore);
+		this.endscore.show(this.game.global.score);
+		
+		this.shutdown();
+	},
+	
+	// called whenever we leave a game state
+	shutdown: function() {
+		this.game.time.events.stop();
+		this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
+		this.player.destroy();
+		this.enemies.destroy();
+		this.boss.destroy();
+		this.powerups.destroy();
+		this.lasers.destroy();
+		this.shields.destroy();
+		this.pills.destroy();
+		this.coins.destroy();
+	}
 
 };
 

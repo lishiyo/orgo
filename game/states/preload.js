@@ -17,7 +17,6 @@ Preload.prototype = {
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
 		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
-		this.load.image('pixel', 'assets/pixel.png');
 		
 		// Enemies
 		this.load.spritesheet('enemy', 'assets/enemy.png', 56, 72);
@@ -44,12 +43,12 @@ Preload.prototype = {
 		this.load.image('powerupR3', 'assets/powerups/powerupRed_bolt.png');
 			
 		// Defense Powers - shields for health and pills for additional life
-		this.load.image('shieldBronze', 'assets/powerups/shield_bronze.png');
-		this.load.image('shieldSilver', 'assets/powerups/shield_silver.png');
-		this.load.image('shieldGold', 'assets/powerups/shield_gold.png');
-		this.load.image('pillB', 'assets/powerups/pill_blue.png');
-		this.load.image('pillG', 'assets/powerups/pill_green.png');
-		this.load.image('pillR', 'assets/powerups/pill_red.png');
+		this.load.image('shield1', 'assets/powerups/defense/shield_bronze.png');
+		this.load.image('shield2', 'assets/powerups/defense/shield_silver.png');
+		this.load.image('shield3', 'assets/powerups/defense/shield_gold.png');
+		this.load.image('pillB', 'assets/powerups/defense/pill_blue.png');
+		this.load.image('pillG', 'assets/powerups/defense/pill_green.png');
+		this.load.image('pillR', 'assets/powerups/defense/pill_red.png');
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
@@ -64,22 +63,26 @@ Preload.prototype = {
 		this.load.image('laserG3', 'assets/weapons/laserGreen06.png');
 		
 		// UI
-// 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
 		this.load.image('restartMenu', 'assets/ui/restart_metal.png');
+		this.load.image('startButton', 'assets/ui/buttonStart.png');
+		this.load.image('pauseButton', 'assets/ui/buttonPause_sm.png');
 		this.load.image('scoreboard', 'assets/ui/glassPanel_100.png');
-// 		this.load.image('pauseBar', 'assets/ui/glassPanel_pause.png');		
+		this.load.image('gameover', 'assets/ui/gameover.png');
 		this.load.image('starBasic', 'assets/misc/star.png');
 		this.load.image('starBronze', 'assets/misc/starBronze_20.png');
 		this.load.image('starSilver', 'assets/misc/starSilver_20.png');
 		this.load.image('starGold', 'assets/misc/starGold_20.png');
 		this.load.image('starDiamond', 'assets/misc/starDiamond.png');
 		this.load.image('heart', 'assets/ui/hud_heartFull_small.png');
+		this.load.image('pixel', 'assets/pixel.png');
+		this.load.image('medalBronze', 'assets/ui/medalBronze_sm.png');
+		this.load.image('medalSilver', 'assets/ui/medalSilver_sm.png');
+		this.load.image('medalGold', 'assets/ui/medalGold_sm.png');
 		
 		// ITEMS/ACCESSORIES
 		this.load.image('coin1', 'assets/items/coinBronze.png');
 		this.load.image('coin2', 'assets/items/coinSilver.png');
 		this.load.image('coin3', 'assets/items/coinGold.png');
-		
 		this.load.image('gemR1', 'assets/items/gemRed1.png');
 		this.load.image('gemR2', 'assets/items/gemRed2.png');
 		this.load.image('gemR3', 'assets/items/gemRed3.png');
@@ -89,7 +92,7 @@ Preload.prototype = {
 		this.load.image('gemB1', 'assets/items/gemBlue1.png');
 		this.load.image('gemB2', 'assets/items/gemBlue2.png');
 		this.load.image('gemB3', 'assets/items/gemBlue3.png');
-
+		
 		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);
 		this.load.audio('fireSound', ['assets/bullet.ogg', 'assets/bullet.mp3']);

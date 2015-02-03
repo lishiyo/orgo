@@ -16,7 +16,7 @@ window.onload = function () {
 
   game.state.start('boot');
 };
-},{"./states/boot":6,"./states/bullet":7,"./states/gameover":8,"./states/menu":9,"./states/play":10,"./states/preload":11}],2:[function(require,module,exports){
+},{"./states/boot":7,"./states/bullet":8,"./states/gameover":9,"./states/menu":10,"./states/play":11,"./states/preload":12}],2:[function(require,module,exports){
 'use strict';
 
 var EnemyGroup = function(opts, game, parent) {
@@ -24,8 +24,7 @@ var EnemyGroup = function(opts, game, parent) {
 	this.game = game;
 	this.enableBody = true;	
 	this._currLevel = 1;
-	this._bossTally= {};
-	this._levels = { 1: "1", 2: "2", 3: "3"};
+	this._levels = ["1", "2", "3"];
 	
 	// Initialize enemies at level one
 	this.addEnemies(1);
@@ -41,13 +40,11 @@ EnemyGroup.prototype.update = function() {
 
 EnemyGroup.prototype.dealDamage = function(enemy) {
 	var level = this.getEnemyLevel(enemy.key);	
+	console.log("deal damage", level, this.game.global.enemyAttack[level]);
 	return this.game.global.enemyAttack[level];
 };
 
 EnemyGroup.prototype.genBoss = function(level) {
-	// if boss for this level already exists, return
-	if (this._bossTally[level]) { return; }
-	
 	// levels 1-3
 	var bossKey = 'boss' + level;
 	var boss = this.game.add.sprite(this.game.rnd.integerInRange(40, this.game.world.width - 80), 0, bossKey);
@@ -67,9 +64,6 @@ EnemyGroup.prototype.genBoss = function(level) {
 	boss.health = level * 500;
 	boss.body.collideWorldBounds = true;
 	boss.body.bounce.set(1);
-	
-	// only create one boss per level
-	this._bossTally[level] = true;
 	
 	return boss;
 };
@@ -102,10 +96,6 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 			endVel = Math.min(level * 200, 500);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		
-	// for spritesheets
-// 	enemy.animations.add('attack', [0, 1], 4, true);
-// 	enemy.animations.play('attack');
-
 	// enemy health depends on its own level
 	enemy.health = this.game.global.enemyHealth[level];
 
@@ -116,11 +106,10 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 	return enemy;
 }
 
-
 EnemyGroup.prototype.getEnemyLevel = function(key) {
-	for (var i = 1; i <= 3; i++) {
+	for (var i = 0; i < this._levels.length; i++) {
 		if (key.search(this._levels[i]) !== -1) {
-			var level = i;
+			var level = i+1;
 			break;
 		}
 	}
@@ -131,9 +120,167 @@ module.exports = EnemyGroup;
 },{}],3:[function(require,module,exports){
 'use strict';
 
+var recycleItem = function(item, game){
+	item.anchor.setTo(0.5, 0.5);
+	item.reset(game.rnd.integerInRange(20, game.world.width-40), -item.height/2);
+	item.body.velocity.y = 150;
+	item.body.angularVelocity = 100;
+	item.checkWorldBounds = true;
+	item.outOfBoundsKill = true;
+	
+	// tween for effect
+	game.add.tween(item.scale).to({x: 1.25, y: 1.25}, 400, Phaser.Easing.Sinusoidal.InOut, true, 0, 100, true);
+
+	return item;
+};
+
+var getLevel = function(key) {
+	var levels = ["1", "2", "3"];
+	for (var i = 0; i < levels.length; i++) {
+		if (key.search(levels[i]) !== -1) {
+			var level = i+1;
+			break;
+		}
+	}
+	return level;
+};
+
+/**--- PILLS ---**/
+
+var PillGroup = function(game, parent) {
+	Phaser.Group.call(this, game, parent);
+	this.game = game;
+	this.enableBody = true;	
+	this._keys = ['pillB', 'pillG', 'pillR'];
+};
+
+PillGroup.prototype = Object.create(Phaser.Group.prototype);
+PillGroup.prototype.constructor = PillGroup;
+
+PillGroup.prototype.createPills = function() {	
+	for (var i = 0; i < this._keys.length; i++) {
+		this.create(0, 0, this._keys[i], 1, false);
+	}
+	
+	return this;
+};
+	
+// recycle random pill
+PillGroup.prototype.newPill = function() {	
+	var pill = this.getRandom();				
+	if (!pill) { return; }
+	
+	recycleItem(pill, this.game);
+};
+
+// pill restores HP back to 100% for that level
+PillGroup.prototype.takePill = function(player, pill, level) {
+	player.boostHealth(level);
+	pill.kill();
+};
+
+
+/**--- SHIELDS ---**/
+
+var ShieldGroup = function(game, parent) {
+	Phaser.Group.call(this, game, parent);
+	this.game = game;
+	this.enableBody = true;	
+	this._keys = ['shield1', 'shield2', 'shield3'];
+};
+
+ShieldGroup.prototype = Object.create(Phaser.Group.prototype);
+ShieldGroup.prototype.constructor = ShieldGroup;
+
+ShieldGroup.prototype.createShields = function() {	
+	var freq = 20; // 20 bronze, 12 silver, 4 gold
+	for (var i = 0; i < this._keys.length; i++) {		
+		this.createMultiple(freq, this._keys[i]);
+		freq -= 8;
+	}
+	
+	return this;
+};
+	
+// recycle random shield
+ShieldGroup.prototype.newShield = function() {	
+	var shield = this.getRandom();				
+	if (!shield) { return; }
+	
+	recycleItem(shield, this.game);
+};
+
+// shield raises player HP max
+ShieldGroup.prototype.takeShield = function(player, shield, level) {
+	var shieldLevel = getLevel(shield.key);	
+	var shieldBoost = shieldLevel * 25;
+	player.boostHealth(level, shieldBoost);
+	
+	shield.kill();
+};
+
+
+/**--- COINS ---**/
+
+var CoinGroup = function(game, parent) {
+	Phaser.Group.call(this, game, parent);
+	this.game = game;
+	this.enableBody = true;	
+	this._keys = ['coin1', 'coin2', 'coin3'];
+};
+
+CoinGroup.prototype = Object.create(Phaser.Group.prototype);
+CoinGroup.prototype.constructor = CoinGroup;
+
+CoinGroup.prototype.createCoins = function() {	
+	var freq = 20; // 20 bronze, 12 silver, 4 gold
+	for (var i = 0; i < this._keys.length; i++) {		
+		this.createMultiple(freq, this._keys[i]);
+		freq -= 8;
+	}
+	
+	return this;
+};
+
+
+// recycle random coin
+CoinGroup.prototype.newCoin = function() {	
+	var coin = this.getRandom();				
+	if (!coin) { return; }
+	
+	coin.anchor.setTo(0.5, 0.5);
+	coin.reset(this.game.rnd.integerInRange(20, this.game.world.width-40), -coin.height/2);
+	coin.body.velocity.y = 150;
+	coin.body.angularVelocity = 100;
+	coin.checkWorldBounds = true;
+	coin.outOfBoundsKill = true;
+	
+	return coin;
+};
+
+// shield raises player HP max
+CoinGroup.prototype.takeCoin = function(player, coin) {
+	var level = getLevel(coin.key);
+	this.game.global.score += (level * 50);
+	
+	coin.kill();
+};
+
+var ItemGroup = {
+	pills: PillGroup,
+	shields: ShieldGroup,
+	coins: CoinGroup
+};
+
+
+module.exports = ItemGroup;
+},{}],4:[function(require,module,exports){
+'use strict';
+
 var Player = function(opts, game, x, y, frame) {
 	// super call to Phaser.Sprite
   Phaser.Sprite.call(this, game, x, y, 'player', frame);
+	this.game = game;
 	
   this.anchor.setTo(0.5, 0.5);
 	this.game.physics.arcade.enable(this);
@@ -256,31 +403,44 @@ Player.prototype.fireLaser = function(x, color) {
 		return;
 	}
 
-	// Set the collision area of the laser
-	laser.body.setSize(laser.width, laser.height-2, 0, 0);
-
 	// Initialize the laser
 	laser.anchor.setTo(0.5, 1);
 	laser.reset(x, this.y - this.height/2);
 
+	// Set laser's collision area
+	laser.body.setSize(laser.width, laser.height - 2, 0, 0);
+	
 	// Laser follows angle and velocity of player
 	laser.angle = this.angle;
 	var rad = Phaser.Math.degToRad(this.angle);
 	var dx = 300 * Math.sin(rad),
-			dy = -300 * Math.cos(rad);
-		
+			dy = -300 * Math.cos(rad);		
 	laser.body.velocity.x = dx;
-	laser.body.velocity.y = dy;
-	
+	laser.body.velocity.y = dy;	
 	
 	// Kill the laser when out of the world
 	laser.checkWorldBounds = true;	
 	laser.outOfBoundsKill = true;
 };
 
+// raise HP based on either level of shieldBoost
+Player.prototype.boostHealth = function(level, shieldBoost) {
+	if (typeof shieldBoost === "undefined") {
+		var increase = Math.max(this.game.global.health * (level - 1) * 0.5, 0);
+		this.health = this.game.global.health + increase;
+		console.log("no shieldboost", level, this.health);		
+	} else {		
+		this.game.global.health += shieldBoost;		
+		var increase = Math.max(this.game.global.health * (level - 1) * 0.5, 0);
+		this.health = this.game.global.health + increase;
+		console.log("shieldboost", shieldBoost, this.health);
+	}
+	
+	return this.health;
+};
 
 module.exports = Player;
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 var PowerUpGroup = function(game, parent) {
@@ -305,16 +465,10 @@ var PowerUpGroup = function(game, parent) {
 PowerUpGroup.prototype = Object.create(Phaser.Group.prototype);
 PowerUpGroup.prototype.constructor = PowerUpGroup;
 
-PowerUpGroup.prototype.update = function() {
-  
-};
-
 /* --- RECYCLE POWERUPS --- */
 	
 	// initialize this.powerups with 3 random powerups
-PowerUpGroup.prototype.createPowerUps = function(level) {
-	console.log("refab createPowerUps with level:", level);
-	
+PowerUpGroup.prototype.createPowerUps = function(level) {	
 	// empty out powerups
 	this.removeAll(true);
 
@@ -334,15 +488,14 @@ PowerUpGroup.prototype.createPowerUps = function(level) {
 		this.create(0, 0, keys[i], 1, false);
 	}
 
+	console.log('create powerups for level', level, this);
 	return this;
 };
 	
 	// generate next random powerup based on current power level
-PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {	
-	console.log("refab newPowerUp", oldLevel, currLevel);
-	
+PowerUpGroup.prototype.newPowerUp = function(oldLevel, currLevel) {		
 	if (oldLevel !== currLevel) {		
-		this.createPowerUps(currLevel);	// refresh powerups array
+		this.createPowerUps(currLevel+1);	// refresh powerups array
 	}
 
 	var powerup = this.getFirstDead();				
@@ -371,8 +524,7 @@ PowerUpGroup.prototype.updateColorLvl = function(color){
 	} else {
 		this.colorLevels[color] += 1
 		this.renderColorLvl(color);
-	}
-		
+	}	
 };
 
 PowerUpGroup.prototype.renderColorLvl = function(color){
@@ -388,29 +540,29 @@ PowerUpGroup.prototype.finishColorLvl = function(color){
 };
 
 module.exports = PowerUpGroup;
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
-var Scoreboard = function(game) {
-	
-	var gameover;
-	
+var Scoreboard = function(game) {	
   Phaser.Group.call(this, game);
-
-  gameover = this.create(this.game.width/2, 100, 'gameover');
+	this.game = game;
+	var w = this.game.world.width,
+			h = this.game.world.height;
+	
+  var gameover = this.game.add.text(w/2, 100, 'GAME OVER', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
 	gameover.anchor.setTo(0.5, 0.5);
+	this.add(gameover);
 	
-  this.scoreboard = this.create(this.game.width/2, 200, 'scoreboard');
-	this.scoreboard.anchor.setTo(0.5, 0.5);
-	
-	this.scoreText = this.game.add.bitmapText(this.scoreboard.width, 180, 'flappyfont', '', 18);
+	this.scoreText = this.game.add.text(w/2, 230, '', { font: '28px Lato', fill: '#fff', fontWeight: 'bold'});
+	this.scoreText.anchor.setTo(0.5, 0.5);
 	this.add(this.scoreText);
 	
-	this.bestScoreText = this.game.add.bitmapText(this.scoreboard.width, 230, 'flappyfont', '', 18);
+	this.bestScoreText = this.game.add.text(w/2, 270, '', { font: '28px Lato', fill: '#fff', fontWeight: 'bold'});
+	this.bestScoreText.anchor.setTo(0.5, 0.5);
   this.add(this.bestScoreText);
 	
 	// add start button with a callback
-	this.startButton = this.game.add.button(this.game.width/2, 300, 'startButton', this.startClick, this);
+	this.startButton = this.game.add.button(w/2, 350, 'startButton', this.startClick, this);
   this.startButton.anchor.setTo(0.5,0.5);
   this.add(this.startButton);
 
@@ -421,16 +573,11 @@ var Scoreboard = function(game) {
 Scoreboard.prototype = Object.create(Phaser.Group.prototype);
 Scoreboard.prototype.constructor = Scoreboard;
 
-Scoreboard.prototype.update = function() {
-  
-  // write your prefab's specific update code here
-  
-};
-
 Scoreboard.prototype.show = function(score){
+	var w = this.game.world.width,
+			h = this.game.world.height;
 	var medal, bestScore;
-	// update scoreText displayed by text object
-	this.scoreText.setText(score.toString());
+	this.scoreText.setText('NEW SCORE: ' + score.toString());
 	
 	if (!!localStorage) {
 		// localStorage exists
@@ -438,36 +585,34 @@ Scoreboard.prototype.show = function(score){
 		// if no bestScore yet, or less than current bestScore, reset
 		if (!bestScore || bestScore < score) {
 			bestScore = score;
-			console.log(bestScore);
 			localStorage.setItem('bestScore', bestScore);
 		}
 	} else { // fallback
 		bestScore = 'N/A'
 	}
 	
-	this.bestScoreText.setText(bestScore.toString());
+	this.bestScoreText.setText('BEST SCORE: ' + bestScore.toString());
 	
 	// determine whether or not to show medal
 	if (score >= 10 && score < 20)
 		{
-			// position medal relative to the scoreboard sprite origin
-			medal = this.game.add.sprite(-65, 7, 'medals', 1);
-			medal.anchor.setTo(0.5, 0.5);
-			this.scoreboard.addChild(medal);
-		} else if (score >= 20) {
-			medal = this.game.add.sprite(-65, 7, 'medals', 0);
-			medal.anchor.setTo(0.5, 0.5);
-			this.scoreboard.addChild(medal);
+			medal = this.game.add.sprite(w/2, 165, 'medalBronze');
+		} else if (score >= 20 && score < 30) {
+			medal = this.game.add.sprite(w/2, 165, 'medalSilver');
+		} else {
+			medal = this.game.add.sprite(w/2, 165, 'medalGold');
 		}
 	
 	if (medal) { // start a particle emitter to display 'shinies'
-		// x position, y position, num of particles
+		medal.anchor.setTo(0.5, 0.5);
+		this.addChild(medal);
+		
 		var emitter = this.game.add.emitter(medal.x, medal.y, 400);
-		this.scoreboard.addChild(emitter);
+		this.addChild(emitter);
 		emitter.width = medal.width;
 		emitter.height = medal.height;
 		
-		emitter.makeParticles('particle');
+		emitter.makeParticles('pixel');
 		emitter.setRotation(-100, 100);
 		emitter.setXSpeed(0, 0);
 		emitter.setYSpeed(0, 0);
@@ -476,23 +621,23 @@ Scoreboard.prototype.show = function(score){
 		emitter.setAll('body.allowGravity', false);
 		
 		// emitter.start(explode, lifespan, frequency, quantity)
-		// don't emit everything at once, but 1 particle per second with lifespan of 1 second
 		emitter.start(false, 1000, 1000);
 		
 	}
 	// start at current value and tween to y: 0
 	// duration, easing function, autoStart (default false)
 	this.game.add.tween(this).to({y: 0}, 1000, Phaser.Easing.Bounce.Out, true);
+
 };
 
 // when start button is clicked, restart play state
 Scoreboard.prototype.startClick = function(){
 	this.game.state.start('play');
-}
+};
 
 module.exports = Scoreboard;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 function Boot() {
@@ -505,7 +650,7 @@ Boot.prototype = {
 		// namespace global variables
 		this.game.global = {
 			score: 0,
-			lives: 3,
+			lives: 1,
 			health: 100,
 			enemyHealth: { 1: 100, 2: 150, 3: 250},
 			enemyAttack: { 1: 20, 2: 50, 3: 100},
@@ -524,9 +669,9 @@ Boot.prototype = {
 
 module.exports = Boot;
 
-},{}],7:[function(require,module,exports){
-
 },{}],8:[function(require,module,exports){
+
+},{}],9:[function(require,module,exports){
 'use strict';
 function GameOver() {}
 
@@ -535,16 +680,17 @@ GameOver.prototype = {
 
   },
   create: function () {
-    var style = { font: '65px Arial', fill: '#ffffff', align: 'center'};
+    var style = { font: '65px Lato', fill: '#ffffff', align: 'center'};
     this.titleText = this.game.add.text(this.game.world.centerX,100, 'Game Over!', style);
     this.titleText.anchor.setTo(0.5, 0.5);
 
-    this.congratsText = this.game.add.text(this.game.world.centerX, 200, 'You Win!', { font: '32px Arial', fill: '#ffffff', align: 'center'});
-    this.congratsText.anchor.setTo(0.5, 0.5);
+//     this.congratsText = this.game.add.text(this.game.world.centerX, 200, 'You Win!', { font: '32px Arial', fill: '#ffffff', align: 'center'});
+//     this.congratsText.anchor.setTo(0.5, 0.5);
 
-    this.instructionText = this.game.add.text(this.game.world.centerX, 300, 'Click To Play Again', { font: '16px Arial', fill: '#ffffff', align: 'center'});
+    this.instructionText = this.game.add.text(this.game.world.centerX, 300, 'Click To Play Again', { font: '24px Lato', fill: '#ffffff', align: 'center'});
     this.instructionText.anchor.setTo(0.5, 0.5);
   },
+	
   update: function () {
     if(this.game.input.activePointer.justPressed()) {
       this.game.state.start('play');
@@ -553,7 +699,7 @@ GameOver.prototype = {
 };
 module.exports = GameOver;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 function Menu() {}
 
@@ -563,7 +709,7 @@ Menu.prototype = {
   },
   create: function() { 
 		// tween
-		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the microbes', { font: '50px Lato', fill: '#fff' });
+		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the molecules', { font: '50px Lato', fill: '#fff' });
 		nameLabel.anchor.setTo(0.5, 0.5);
 		nameLabel.scale.setTo(0, 0);
 		this.game.add
@@ -571,10 +717,10 @@ Menu.prototype = {
 			.easing(Phaser.Easing.Bounce.Out).start();
 
 		// display score if any
-// 		if (this.game.global.score > 0) {
-// 			var scoreLabel = this.game.add.text(this.game.world.centerX, this.game.world.centerY, 'score: ' + this.game.global.score, { font: '25px Arial', fill: '#ffffff' });
-// 			scoreLabel.anchor.setTo(0.5, 0.5);				
-// 		}
+		if (this.game.global.score > 0) {
+			var scoreLabel = this.game.add.text(this.game.world.centerX, this.game.world.centerY, 'score: ' + this.game.global.score, { font: '25px Lato', fill: '#ffffff' });
+			scoreLabel.anchor.setTo(0.5, 0.5);				
+		}
 
 		// instructions
 		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press the spacebar to start and fire! Use arrow keys for movement and rotation.", { font: '25px Lato', fill: '#f9f9f9' });
@@ -613,13 +759,16 @@ Menu.prototype = {
 
 module.exports = Menu;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var Scoreboard = require('../prefabs/scoreboard');
 var Player = require('../prefabs/player');
 var EnemyGroup = require('../prefabs/enemyGroup');
 var PowerUpGroup = require('../prefabs/powerupGroup');
+var PillsGroup = require('../prefabs/itemGroup').pills;
+var ShieldGroup = require('../prefabs/itemGroup').shields;
+var CoinGroup = require('../prefabs/itemGroup').coins;
 
 function Play() {};
 
@@ -649,8 +798,7 @@ Play.prototype = {
 		this.bonusSound = this.game.add.audio('takeBonus');
 		this.dieSound = this.game.add.audio('enemyDie');
 		this.hitSound = this.game.add.audio('playerHit');
-		
-		
+			
 		/* --- Display UI labels --- */
 		this.pauseGame();
 		this.displayLabels();
@@ -677,11 +825,16 @@ Play.prototype = {
 		this.powerups.createPowerUps(1);
 				
 		// Create pills (red, green, blue)
+		this.pills = new PillsGroup(this.game);
+		this.pills.createPills();
 		
 		// Create shields (bronze, gold, silver)
+		this.shields = new ShieldGroup(this.game);
+		this.shields.createShields();
 		
 		// Create coins
-		
+		this.coins = new CoinGroup(this.game);
+		this.coins.createCoins();
 		
 		/* --- Initialise emitters --- */
 
@@ -711,13 +864,37 @@ Play.prototype = {
 		this.explosionEmitterBoss.setXSpeed(-400, 400);		
 		this.explosionEmitterBoss.gravity = 0;
 
-		// Create new powerup every 8 seconds
 		this.game.physics.setBoundsToWorld();		
+		
+		// Create new powerup every 10 seconds
 		this.game.time.events.loop(4000, this.genPowerUps, this);
+		
+		// Create new pill every 16 seconds
+		this.game.time.events.loop(2000, this.genPill, this);
+		
+		// Create new shield or coin every 22 seconds
+		this.game.time.events.loop(2000, this.genShield, this);
+		this.game.time.events.loop(2000, this.genCoin, this);
+		
+		// Create boss every 30 seconds
+		this.game.time.events.loop(4000, this.maybeGenBoss, this);
 },
 	
+	/** --- EVENT LOOPS --- **/
 	genPowerUps: function(){
 		this.powerups.newPowerUp(this._oldPowerLevel, this._currPowerLevel);
+	},
+	
+	genPill: function(){
+		this.pills.newPill();
+	},
+	
+	genShield: function(){
+		this.shields.newShield();
+	},
+	
+	genCoin: function(){
+		this.coins.newCoin();
 	},
 
 	update: function() {
@@ -725,12 +902,12 @@ Play.prototype = {
 
 		// Check all collisions
 		this.game.physics.arcade.overlap(this.player, this.enemies, this.playerHit, null, this);
-		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);
-		
+		this.game.physics.arcade.collide(this.player, this.boss, this.playerHit, null, this);		
 		this.game.physics.arcade.overlap(this.enemies, this.lasers, this.enemyHit, null, this);
-		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);
-		
-		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.overlap(this.boss, this.lasers, this.enemyHit, null, this);		this.game.physics.arcade.overlap(this.player, this.powerups, this.takePowerUp, null, this);
+		this.game.physics.arcade.overlap(this.player, this.pills, this.takePill, null, this);
+		this.game.physics.arcade.overlap(this.player, this.shields, this.takeShield, null, this);
+		this.game.physics.arcade.overlap(this.player, this.coins, this.takeCoin, null, this);
 
 		// Player movement
 		this.player.move();
@@ -761,17 +938,17 @@ Play.prototype = {
 			// enemies rise levels based on game score
 			if (this.game.global.score <= 10) {
 				var enemyLevel = 1;
-			} else {
+			} else if (this.game.global.score <= 20) {
 				var enemyLevel = 2;
+			} else {
+				var enemyLevel = 3;
 			}
 			
 			// add more enemies if you rose up a level
 			if (enemyLevel !== this._currEnemyLevel){
 				this._oldEnemyLevel = this._currEnemyLevel;
-				this._currEnemyLevel = enemyLevel;
-				
+				this._currEnemyLevel = enemyLevel;				
 				this.enemies.addEnemies(enemyLevel);
-				this.boss = this.enemies.genBoss(enemyLevel);
 			}
 			
 			// instantiate a new enemy
@@ -780,6 +957,19 @@ Play.prototype = {
 		}
 	},
 	
+	// only one boss at a time
+	maybeGenBoss: function(){		
+		if (typeof this.boss === "undefined") {
+			this.boss = this.enemies.genBoss(1);
+		}
+		
+		if (this.boss.alive) {
+			return;
+		} else {
+			var bossLevel = this._currEnemyLevel - 1;
+			this.boss = this.enemies.genBoss(bossLevel);
+		}		
+	},
 	
 	generateEnemy: function(enemyLevel) {
 // 		var enemy = this.enemies.getFirstDead();
@@ -810,6 +1000,7 @@ Play.prototype = {
 	
 	// Player was hit
 	playerHit: function(player, enemy) {
+		// recoil player
 		this.player.y += (enemy.body.velocity.y / 10);
 					
 		if (enemy !== this.boss) {
@@ -841,8 +1032,9 @@ Play.prototype = {
 		// Update lives count - game over if 0 lives left
 		this.lives -= 1;
 		this.hearts.removeBetween(this.lives, this.lives+1, true, true);
-		
-		this.player.health = this.game.global.health;
+		// restore player health to starting HP
+		this.player.boostHealth(this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
 		
 		if (this.lives <= 0) {
 			// Kill the player
@@ -854,7 +1046,7 @@ Play.prototype = {
 			this.explosionEmitter.start(true, 800, null, 30);
 
 			// Go to the menu in 1 second
-			this.game.time.events.add(1000, this.startMenu, this);
+			this.game.time.events.add(1000, this.deathHandler, this);
 		} 
 	},
 	
@@ -863,16 +1055,14 @@ Play.prototype = {
 		var newColor = this.getPowerColor(powerup.key);
 			
 		// Initialize to first taken powerup if no color yet
-		if (this._currColor === undefined) { // first powerup 
-			this._currColor = newColor;
+		if (this._currColor === undefined) { 
+			this._currColor = newColor;			
+			this.swapColor(newColor);
 			this.swapPowerLevel(1);
-			this.swapColor(newColor);
-			this.powerups.updateColorLvl(this._currColor);
 		// If swapped color, reset power level to one
-		} else if (this._currColor !== newColor) {
-			this.swapPowerLevel(-(this._currPowerLevel-1));
+		} else if (this._currColor !== newColor) {			
 			this.swapColor(newColor);
-			this.powerups.updateColorLvl(this._currColor);
+			this.swapPowerLevel(-(this._currPowerLevel-1));
 		} else {		
 		// If powerup is same color and greater level, go up one power level
 			this.colorLabel.text = 'color: ' + this._currColor;
@@ -880,16 +1070,33 @@ Play.prototype = {
 			if (newLevel > this._currPowerLevel)	{
 				this.swapPowerLevel(1);
 			}
-			this.powerups.updateColorLvl(this._currColor);
 		}
 		
 		powerup.kill();
 		this.increaseScore(this._currPowerLevel * 10);
 				
-		// Tween the player with sound
-		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
-			.to({x: 1, y: 1}, 100).start();
-		this.bonusSound.play();
+		this.soundPickup();
+	},
+	
+	takePill: function(player, pill) {
+		this.pills.takePill(player, pill, this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
+		
+		this.soundPickup();
+	},
+	
+	takeShield: function(player, pill) {
+		this.shields.takeShield(player, pill, this._currPowerLevel);
+		this.healthLabel.text = 'health: ' + this.player.health;
+		
+		this.soundPickup();
+	},
+	
+	takeCoin: function(player, coin) {
+		this.coins.takeCoin(player, coin);
+		this.scoreLabel.text = 'score: ' + this.game.global.score;
+		
+		this.soundPickup();
 	},
 
 	enemyHit: function(enemy, laser) {
@@ -943,7 +1150,10 @@ Play.prototype = {
 		this._oldPowerLevel = this._currPowerLevel;
 		this._currPowerLevel += dx;
 		this.swapLaser();
+		this.player.boostHealth(this._currPowerLevel);
+		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
+		this.powerups.updateColorLvl(this._currColor);
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
@@ -955,21 +1165,29 @@ Play.prototype = {
 		this.lasers.createMultiple(50, laserKey);
 	},
 	
+	soundPickup: function(){
+		// Tween the player with sound
+		this.game.add.tween(this.player.scale).to({x: 1.4, y: 1.4}, 50)
+			.to({x: 1, y: 1}, 100).start();
+		this.bonusSound.play();
+	},
+	
 	pauseGame: function(){
     var w = this.game.world.width,
 				h = this.game.world.height;
+		// add pause button with a callback
+		this.pauseButton = this.game.add.button(w-10, 110, 'pauseButton', this.clickPause, this);
+		this.pauseButton.anchor.setTo(1, 0);
+	},
+	
+	clickPause: function(){
+		var w = this.game.world.width,
+				h = this.game.world.height;
 		
-    var pause_label = this.game.add.text(w-80, 110, 'PAUSE', { font: '20px Lato', fill: '#fff' });
-    pause_label.inputEnabled = true;
-		
-    pause_label.events.onInputUp.add(function () {
-			this.game.paused = true;
-			this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
-      this.restartMenu.anchor.setTo(0.5, 0.5);
-			
-			this.game.input.onDown.add(this.unpause, this);
-    }.bind(this));
-
+		this.game.paused = true;
+		this.restartMenu = this.game.add.sprite(w/2, h/2, 'restartMenu')
+		this.restartMenu.anchor.setTo(0.5, 0.5);
+		this.game.input.onDown.add(this.unpause, this);
 	},
 	
   unpause: function(event){
@@ -1006,14 +1224,14 @@ Play.prototype = {
 			var dx = i * 30;
 			this.hearts.create(startX + dx, 17, 'heart');			
 		};		
-		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526' });
+		this.healthLabel = this.game.add.text(20, 50, 'health: 100',  {font: '14px Lato', fill: '#C8F526', fontWeight: 'bold' });
 		
 		// Display scoreboard (glass panel) in the top right
-		this.scoreboard = this.game.add.sprite(w-5, 5, 'scoreboard');
+		this.scoreboard = this.game.add.sprite(w-10, 10, 'scoreboard');
 		this.scoreboard.anchor.setTo(1, 0);
 		
 		// Display score label in the top right
-		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B' });
+		this.scoreLabel = this.game.add.text(w-20, 20, 'score: 0', { font: '18px Lato', fill: '#FCDC3B', fontWeight: 'bold' });
 		this.scoreLabel.anchor.setTo(1, 0);
 		
 		// Display current power level and color in top right
@@ -1042,11 +1260,33 @@ Play.prototype = {
 	startMenu: function() {
 		this.game.state.start('menu');
 	},
+	
+	deathHandler: function(){
+		this.endscore = new Scoreboard(this.game);
+		this.game.add.existing(this.endscore);
+		this.endscore.show(this.game.global.score);
+		
+		this.shutdown();
+	},
+	
+	// called whenever we leave a game state
+	shutdown: function() {
+		this.game.time.events.stop();
+		this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
+		this.player.destroy();
+		this.enemies.destroy();
+		this.boss.destroy();
+		this.powerups.destroy();
+		this.lasers.destroy();
+		this.shields.destroy();
+		this.pills.destroy();
+		this.coins.destroy();
+	}
 
 };
 
 module.exports = Play;
-},{"../prefabs/enemyGroup":2,"../prefabs/player":3,"../prefabs/powerupGroup":4,"../prefabs/scoreboard":5}],11:[function(require,module,exports){
+},{"../prefabs/enemyGroup":2,"../prefabs/itemGroup":3,"../prefabs/player":4,"../prefabs/powerupGroup":5,"../prefabs/scoreboard":6}],12:[function(require,module,exports){
 'use strict';
 function Preload() {
   this.asset = null;
@@ -1066,7 +1306,6 @@ Preload.prototype = {
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
 		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
-		this.load.image('pixel', 'assets/pixel.png');
 		
 		// Enemies
 		this.load.spritesheet('enemy', 'assets/enemy.png', 56, 72);
@@ -1093,12 +1332,12 @@ Preload.prototype = {
 		this.load.image('powerupR3', 'assets/powerups/powerupRed_bolt.png');
 			
 		// Defense Powers - shields for health and pills for additional life
-		this.load.image('shieldBronze', 'assets/powerups/shield_bronze.png');
-		this.load.image('shieldSilver', 'assets/powerups/shield_silver.png');
-		this.load.image('shieldGold', 'assets/powerups/shield_gold.png');
-		this.load.image('pillB', 'assets/powerups/pill_blue.png');
-		this.load.image('pillG', 'assets/powerups/pill_green.png');
-		this.load.image('pillR', 'assets/powerups/pill_red.png');
+		this.load.image('shield1', 'assets/powerups/defense/shield_bronze.png');
+		this.load.image('shield2', 'assets/powerups/defense/shield_silver.png');
+		this.load.image('shield3', 'assets/powerups/defense/shield_gold.png');
+		this.load.image('pillB', 'assets/powerups/defense/pill_blue.png');
+		this.load.image('pillG', 'assets/powerups/defense/pill_green.png');
+		this.load.image('pillR', 'assets/powerups/defense/pill_red.png');
 		
 		// Weapons
 		this.load.image('laser', 'assets/weapons/laser.png');
@@ -1113,22 +1352,26 @@ Preload.prototype = {
 		this.load.image('laserG3', 'assets/weapons/laserGreen06.png');
 		
 		// UI
-// 		this.load.image('pauseMenu', 'assets/ui/pause-menu-6-btns.png');
 		this.load.image('restartMenu', 'assets/ui/restart_metal.png');
+		this.load.image('startButton', 'assets/ui/buttonStart.png');
+		this.load.image('pauseButton', 'assets/ui/buttonPause_sm.png');
 		this.load.image('scoreboard', 'assets/ui/glassPanel_100.png');
-// 		this.load.image('pauseBar', 'assets/ui/glassPanel_pause.png');		
+		this.load.image('gameover', 'assets/ui/gameover.png');
 		this.load.image('starBasic', 'assets/misc/star.png');
 		this.load.image('starBronze', 'assets/misc/starBronze_20.png');
 		this.load.image('starSilver', 'assets/misc/starSilver_20.png');
 		this.load.image('starGold', 'assets/misc/starGold_20.png');
 		this.load.image('starDiamond', 'assets/misc/starDiamond.png');
 		this.load.image('heart', 'assets/ui/hud_heartFull_small.png');
+		this.load.image('pixel', 'assets/pixel.png');
+		this.load.image('medalBronze', 'assets/ui/medalBronze_sm.png');
+		this.load.image('medalSilver', 'assets/ui/medalSilver_sm.png');
+		this.load.image('medalGold', 'assets/ui/medalGold_sm.png');
 		
 		// ITEMS/ACCESSORIES
 		this.load.image('coin1', 'assets/items/coinBronze.png');
 		this.load.image('coin2', 'assets/items/coinSilver.png');
 		this.load.image('coin3', 'assets/items/coinGold.png');
-		
 		this.load.image('gemR1', 'assets/items/gemRed1.png');
 		this.load.image('gemR2', 'assets/items/gemRed2.png');
 		this.load.image('gemR3', 'assets/items/gemRed3.png');
@@ -1138,7 +1381,7 @@ Preload.prototype = {
 		this.load.image('gemB1', 'assets/items/gemBlue1.png');
 		this.load.image('gemB2', 'assets/items/gemBlue2.png');
 		this.load.image('gemB3', 'assets/items/gemBlue3.png');
-
+		
 		// Load sound effects
 		this.load.audio('takeBonus', ['assets/bonus.ogg', 'assets/bonus.mp3']);
 		this.load.audio('fireSound', ['assets/bullet.ogg', 'assets/bullet.mp3']);
