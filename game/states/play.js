@@ -104,18 +104,18 @@ Play.prototype = {
 
 		this.game.physics.setBoundsToWorld();		
 		
-		// Create new powerup every 10 seconds
-		this.game.time.events.loop(4000, this.genPowerUps, this);
+		// Create new powerup every 8 seconds
+		this.game.time.events.loop(8000, this.genPowerUps, this);
 		
 		// Create new pill every 16 seconds
-		this.game.time.events.loop(2000, this.genPill, this);
+		this.game.time.events.loop(16000, this.genPill, this);
 		
-		// Create new shield or coin every 22 seconds
-		this.game.time.events.loop(2000, this.genShield, this);
-		this.game.time.events.loop(2000, this.genCoin, this);
+		// Create new shield or coin every 18/26 seconds
+		this.game.time.events.loop(18000, this.genShield, this);
+		this.game.time.events.loop(26000, this.genCoin, this);
 		
-		// Create boss every 30 seconds
-		this.game.time.events.loop(4000, this.maybeGenBoss, this);
+		// Create boss every 2 min
+		this.game.time.events.loop(120000, this.maybeGenBoss, this);
 },
 	
 	/** --- EVENT LOOPS --- **/
@@ -391,7 +391,10 @@ Play.prototype = {
 		this.player.boostHealth(this._currPowerLevel);
 		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
-		this.powerups.updateColorLvl(this._currColor);
+		var gem = this.powerups.updateColorLvl(this._currColor);
+		if (gem === "finished") {
+			this.deathHandler(true);
+		}
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
@@ -499,11 +502,15 @@ Play.prototype = {
 		this.game.state.start('menu');
 	},
 	
-	deathHandler: function(){
-		this.endscore = new Scoreboard(this.game);
+	deathHandler: function(won){
+		if (won) {
+			this.endscore = new Scoreboard(this.game, true);
+		} else {
+			this.endscore = new Scoreboard(this.game, false);
+		}
+		
 		this.game.add.existing(this.endscore);
 		this.endscore.show(this.game.global.score);
-		
 		this.shutdown();
 	},
 	
@@ -513,7 +520,9 @@ Play.prototype = {
 		this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
 		this.player.destroy();
 		this.enemies.destroy();
-		this.boss.destroy();
+		if (this.boss) {
+			this.boss.destroy();
+		}		
 		this.powerups.destroy();
 		this.lasers.destroy();
 		this.shields.destroy();

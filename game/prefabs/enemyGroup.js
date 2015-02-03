@@ -34,10 +34,10 @@ EnemyGroup.prototype.genBoss = function(level) {
 	this.game.physics.enable(boss, Phaser.Physics.ARCADE);
 
 	// boss has different stats than normal enemy
-	var startVelY = Math.max(100, level * 25),
-			endVelY = Math.min(level * 200, 450),
-			startVelX = Math.max(50, level * 5),
-			endVelX = Math.min(level * 20, 100);
+	var startVelY = Math.max(200, level * 25),
+			endVelY = Math.min(level * 250, 500),
+			startVelX = Math.max(100, level * 5),
+			endVelX = Math.min(level * 150, 300);
 	
 	boss.body.velocity.y = this.game.rnd.integerInRange(startVelY, endVelY);
 	boss.body.velocity.x = this.game.rnd.integerInRange(startVelX, endVelX);
@@ -74,7 +74,7 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 
 	// Give a random velocity based on level between 100-500
 	var startVel = Math.max(150, level * 50),
-			endVel = Math.min(level * 200, 500);
+			endVel = Math.min(level * 200, 450);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		
 	// enemy health depends on its own level

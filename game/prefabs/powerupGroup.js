@@ -94,6 +94,9 @@ PowerUpGroup.prototype.renderColorLvl = function(color){
 
 PowerUpGroup.prototype.finishColorLvl = function(color){
 	console.log("finished");
+	if (this.colorLevels['R'] === 3 && this.colorsLevels['B'] === 3 && this.colorLevels['G'] === 3) {
+		return "finished";
+	}
 };
 
 module.exports = PowerUpGroup;

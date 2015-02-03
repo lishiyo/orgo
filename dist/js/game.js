@@ -53,10 +53,10 @@ EnemyGroup.prototype.genBoss = function(level) {
 	this.game.physics.enable(boss, Phaser.Physics.ARCADE);
 
 	// boss has different stats than normal enemy
-	var startVelY = Math.max(100, level * 25),
-			endVelY = Math.min(level * 200, 450),
-			startVelX = Math.max(50, level * 5),
-			endVelX = Math.min(level * 20, 100);
+	var startVelY = Math.max(200, level * 25),
+			endVelY = Math.min(level * 250, 500),
+			startVelX = Math.max(100, level * 5),
+			endVelX = Math.min(level * 150, 300);
 	
 	boss.body.velocity.y = this.game.rnd.integerInRange(startVelY, endVelY);
 	boss.body.velocity.x = this.game.rnd.integerInRange(startVelX, endVelX);
@@ -93,7 +93,7 @@ EnemyGroup.prototype.resetEnemy = function(enemy) {
 
 	// Give a random velocity based on level between 100-500
 	var startVel = Math.max(150, level * 50),
-			endVel = Math.min(level * 200, 500);
+			endVel = Math.min(level * 200, 450);
 	enemy.body.velocity.y = this.game.rnd.integerInRange(startVel, endVel);
 		
 	// enemy health depends on its own level
@@ -537,19 +537,26 @@ PowerUpGroup.prototype.renderColorLvl = function(color){
 
 PowerUpGroup.prototype.finishColorLvl = function(color){
 	console.log("finished");
+	if (this.colorLevels['R'] === 3 && this.colorsLevels['B'] === 3 && this.colorLevels['G'] === 3) {
+		return "finished";
+	}
 };
 
 module.exports = PowerUpGroup;
 },{}],6:[function(require,module,exports){
 'use strict';
 
-var Scoreboard = function(game) {	
+var Scoreboard = function(game, won) {	
   Phaser.Group.call(this, game);
 	this.game = game;
 	var w = this.game.world.width,
 			h = this.game.world.height;
 	
-  var gameover = this.game.add.text(w/2, 100, 'GAME OVER', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	if (won) {
+		var gameover = this.game.add.text(w/2, 100, 'YOU WON!!', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	} else {
+		var gameover = this.game.add.text(w/2, 100, 'GAME OVER', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	}
 	gameover.anchor.setTo(0.5, 0.5);
 	this.add(gameover);
 	
@@ -557,7 +564,7 @@ var Scoreboard = function(game) {
 	this.scoreText.anchor.setTo(0.5, 0.5);
 	this.add(this.scoreText);
 	
-	this.bestScoreText = this.game.add.text(w/2, 270, '', { font: '28px Lato', fill: '#fff', fontWeight: 'bold'});
+	this.bestScoreText = this.game.add.text(w/2, 280, '', { font: '28px Lato', fill: '#fff', fontWeight: 'bold'});
 	this.bestScoreText.anchor.setTo(0.5, 0.5);
   this.add(this.bestScoreText);
 	
@@ -650,7 +657,7 @@ Boot.prototype = {
 		// namespace global variables
 		this.game.global = {
 			score: 0,
-			lives: 1,
+			lives: 3,
 			health: 100,
 			enemyHealth: { 1: 100, 2: 150, 3: 250},
 			enemyAttack: { 1: 20, 2: 50, 3: 100},
@@ -709,24 +716,26 @@ Menu.prototype = {
   },
   create: function() { 
 		// tween
-		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the molecules', { font: '50px Lato', fill: '#fff' });
+		var nameLabel = this.game.add.text(this.game.world.centerX, 100, 'attack of the molecules', { font: '50px Lato', fill: '#C8F526' });
 		nameLabel.anchor.setTo(0.5, 0.5);
 		nameLabel.scale.setTo(0, 0);
 		this.game.add
 			.tween(nameLabel.scale).delay(200).to({x: 1, y: 1}, 1000)
 			.easing(Phaser.Easing.Bounce.Out).start();
 
-		// display score if any
-		if (this.game.global.score > 0) {
-			var scoreLabel = this.game.add.text(this.game.world.centerX, this.game.world.centerY, 'score: ' + this.game.global.score, { font: '25px Lato', fill: '#ffffff' });
-			scoreLabel.anchor.setTo(0.5, 0.5);				
-		}
-
 		// instructions
-		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press the spacebar to start and fire! Use arrow keys for movement and rotation.", { font: '25px Lato', fill: '#f9f9f9' });
+		var startLabel = this.game.add.text(this.game.world.centerX, this.game.world.height-320, "Press ARROW KEYS to move", { font: '30px Lato', fill: '#f9f9f9', fontWeight: 'bold' });
+		var startLabel2 = this.game.add.text(this.game.world.centerX, this.game.world.height-270, "Hold down two at the same time to rotate", { font: '30px Lato', fill: '#f9f9f9', fontWeight: 'bold' });
+		var startLabel3 = this.game.add.text(this.game.world.centerX, this.game.world.height-220, "Press SPACEBAR to fire", { font: '30px Lato', fill: '#f9f9f9', fontWeight: 'bold' });
+		
+		var startLabel4 = this.game.add.text(this.game.world.centerX, this.game.world.height-100, "Press SPACEBAR to begin", { font: '30px Lato', fill: '#FCDC3B', fontWeight: 'bold' });
 		startLabel.anchor.setTo(0.5, 0.5);	
+		startLabel2.anchor.setTo(0.5, 0.5);	
+		startLabel3.anchor.setTo(0.5, 0.5);	
+		startLabel4.anchor.setTo(0.5, 0.5);	
+		
 		this.game.add
-			.tween(startLabel).to({alpha: 0}, 500)
+			.tween(startLabel4).to({alpha: 0}, 500)
 			.to({alpha: 1}, 1000).loop().start(); 
 
 		// Add a mute button
@@ -866,18 +875,18 @@ Play.prototype = {
 
 		this.game.physics.setBoundsToWorld();		
 		
-		// Create new powerup every 10 seconds
-		this.game.time.events.loop(4000, this.genPowerUps, this);
+		// Create new powerup every 8 seconds
+		this.game.time.events.loop(8000, this.genPowerUps, this);
 		
 		// Create new pill every 16 seconds
-		this.game.time.events.loop(2000, this.genPill, this);
+		this.game.time.events.loop(16000, this.genPill, this);
 		
-		// Create new shield or coin every 22 seconds
-		this.game.time.events.loop(2000, this.genShield, this);
-		this.game.time.events.loop(2000, this.genCoin, this);
+		// Create new shield or coin every 18/26 seconds
+		this.game.time.events.loop(18000, this.genShield, this);
+		this.game.time.events.loop(26000, this.genCoin, this);
 		
-		// Create boss every 30 seconds
-		this.game.time.events.loop(4000, this.maybeGenBoss, this);
+		// Create boss every 2 min
+		this.game.time.events.loop(120000, this.maybeGenBoss, this);
 },
 	
 	/** --- EVENT LOOPS --- **/
@@ -1153,7 +1162,10 @@ Play.prototype = {
 		this.player.boostHealth(this._currPowerLevel);
 		console.log("swapPowerlevel", this._oldPowerLevel, this._currPowerLevel);
 		
-		this.powerups.updateColorLvl(this._currColor);
+		var gem = this.powerups.updateColorLvl(this._currColor);
+		if (gem === "finished") {
+			this.deathHandler(true);
+		}
 		this.powerLabel.text = 'power: ' + this._currPowerLevel;
 	},
 	
@@ -1261,11 +1273,15 @@ Play.prototype = {
 		this.game.state.start('menu');
 	},
 	
-	deathHandler: function(){
-		this.endscore = new Scoreboard(this.game);
+	deathHandler: function(won){
+		if (won) {
+			this.endscore = new Scoreboard(this.game, true);
+		} else {
+			this.endscore = new Scoreboard(this.game, false);
+		}
+		
 		this.game.add.existing(this.endscore);
 		this.endscore.show(this.game.global.score);
-		
 		this.shutdown();
 	},
 	
@@ -1275,7 +1291,9 @@ Play.prototype = {
 		this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
 		this.player.destroy();
 		this.enemies.destroy();
-		this.boss.destroy();
+		if (this.boss) {
+			this.boss.destroy();
+		}		
 		this.powerups.destroy();
 		this.lasers.destroy();
 		this.shields.destroy();
@@ -1295,17 +1313,17 @@ function Preload() {
 
 Preload.prototype = {
   preload: function () {		
-		var loadingLabel = this.add.text(this.game.world.centerX, 150, 'loading...', { font: '30px Arial', fill: '#ffffff' });
+		var loadingLabel = this.add.text(this.game.world.centerX, 250, 'loading...', { font: '30px Lato', fill: '#fff' });
 		loadingLabel.anchor.setTo(0.5, 0.5);
 
 		// progress bar
-		var progressBar = this.add.sprite(this.game.world.centerX, 200, 'progressBar');
+		var progressBar = this.add.sprite(this.game.world.centerX, 300, 'progressBar');
 		progressBar.anchor.setTo(0.5, 0.5);
 		this.load.setPreloadSprite(progressBar);
 
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
-		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
+		this.load.image('player', 'assets/spaceships/playerShip1_blue.png');
 		
 		// Enemies
 		this.load.spritesheet('enemy', 'assets/enemy.png', 56, 72);

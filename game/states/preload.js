@@ -6,17 +6,17 @@ function Preload() {
 
 Preload.prototype = {
   preload: function () {		
-		var loadingLabel = this.add.text(this.game.world.centerX, 150, 'loading...', { font: '30px Arial', fill: '#ffffff' });
+		var loadingLabel = this.add.text(this.game.world.centerX, 250, 'loading...', { font: '30px Lato', fill: '#fff' });
 		loadingLabel.anchor.setTo(0.5, 0.5);
 
 		// progress bar
-		var progressBar = this.add.sprite(this.game.world.centerX, 200, 'progressBar');
+		var progressBar = this.add.sprite(this.game.world.centerX, 300, 'progressBar');
 		progressBar.anchor.setTo(0.5, 0.5);
 		this.load.setPreloadSprite(progressBar);
 
 		// Load all image assets
 		this.load.spritesheet('mute', 'assets/muteButton.png', 28, 22);
-		this.load.image('player', 'assets/spaceships/playerShip1_orange.png');
+		this.load.image('player', 'assets/spaceships/playerShip1_blue.png');
 		
 		// Enemies
 		this.load.spritesheet('enemy', 'assets/enemy.png', 56, 72);

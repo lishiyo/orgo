@@ -1,12 +1,16 @@
 'use strict';
 
-var Scoreboard = function(game) {	
+var Scoreboard = function(game, won) {	
   Phaser.Group.call(this, game);
 	this.game = game;
 	var w = this.game.world.width,
 			h = this.game.world.height;
 	
-  var gameover = this.game.add.text(w/2, 100, 'GAME OVER', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	if (won) {
+		var gameover = this.game.add.text(w/2, 100, 'YOU WON!!', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	} else {
+		var gameover = this.game.add.text(w/2, 100, 'GAME OVER', { font: '50px Lato', fill: '#FCDC3B', fontWeight: 'bold italic'});
+	}
 	gameover.anchor.setTo(0.5, 0.5);
 	this.add(gameover);
 	
